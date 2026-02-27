@@ -57,6 +57,32 @@
     animation-delay: 4s;
 }
 
+@keyframes leafFill {
+    0% {
+        clip-path: inset(100% 0 0 0);
+    }
+
+    100% {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+.animate-leaf-fill {
+    animation: leafFill 1.5s ease-in-out infinite alternate;
+}
+
+/* Hide scrollbar for horizontal scroll areas */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
 body {
     font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
     background-color: var(--bg-primary);
