@@ -3,9 +3,10 @@ const express = require("express")
 const router = express.Router()
 const Farmer = require("../models/Farmer")
 const ServiceProvider = require("../models/ServiceProvider")
-const {setUserController} = require("../controllers/handleUserController")
+const {setUser,getUser} = require("../controllers/handleUserController")
 
-router.post("/add",setUserController)
+router.get("/get",getUser)
+router.post("/set",setUser)
 
 
 module.exports = router;

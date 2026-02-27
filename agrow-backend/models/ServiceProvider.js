@@ -5,6 +5,10 @@ const serviceProviderSchema = new mongoose.Schema({
         type : String,
         required : true
     },
+    rating : {
+        type : Number,
+        default : 0
+    },
     firstName : {
         type : String,
         required : true
@@ -40,7 +44,7 @@ const serviceProviderSchema = new mongoose.Schema({
         type : String,
         required : true
     },
-    cropList : {
+    serviceList : {
         type : [String],
         required : true
     },

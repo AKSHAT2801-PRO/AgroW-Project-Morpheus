@@ -1,4 +1,5 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
+const Community = require("./Community");
 const contentSchema = new mongoose.Schema({
     title : {
         type :String,
@@ -15,8 +16,16 @@ const contentSchema = new mongoose.Schema({
     tags : {
         type : [String],
     },
+    userRole : {
+        type : String,
+        required : true
+    },
     postedBy : {
         type : String,
+        required : true
+    },
+    communityIds : {
+        type : [String],
         required : true
     },
     createdOn : {

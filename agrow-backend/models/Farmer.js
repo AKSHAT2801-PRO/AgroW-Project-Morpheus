@@ -1,9 +1,13 @@
 const mongoose = require("mongoose")
 
-const farmerSchema = new mongoose.Schema({
+const farmersSchema = new mongoose.Schema({
     userName : {
         type : String,
         required : true
+    },
+    rating : {
+        type : Number,
+        default : 0
     },
     firstName : {
         type : String,
@@ -54,16 +58,17 @@ const farmerSchema = new mongoose.Schema({
     },
     userContent : {
         type : [String],
+
     },
     likedContent : {
-        type : [String],
+        type : [String]
     },
     dislikedContent : {
         type : [String]
     }
 })
 
-const Farmer = mongoose.model("Farmers", farmerSchema)
+const Farmer = mongoose.model("Farmers", farmersSchema)
 
 module.exports = Farmer;
 

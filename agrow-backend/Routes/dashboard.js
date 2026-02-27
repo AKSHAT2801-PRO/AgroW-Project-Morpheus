@@ -1,7 +1,8 @@
 const express = require("express")
 const router = express.Router()
-const {getAllCommunities} = require("../controllers/handleDashboard")
+const {getAllCommunities,getCommunityByQuery} = require("../controllers/handleDashboard")
 
-router.get("/allcommunities",getAllCommunities)
+router.get("/get",getCommunityByQuery)
+router.get("/getall",getAllCommunities)
 
 module.exports = router

@@ -1,22 +1,22 @@
 const mongoose = require("mongoose")
 const communitySchema = new mongoose.Schema({
-    communityName : {
+    name : {
         type : String,
         required : true
     },
-    communityDescription : {
+    description : {
         type : String,
         required : true
     },
-    communityRules : {
+    rules : {
         type : String,
         required : true
     },
-    communityMembers : {
+    members : {
         type : [String],
         required : true 
     },
-    communityContent : {
+    content : {
         type : [String]
     },
     state : {
@@ -35,7 +35,7 @@ const communitySchema = new mongoose.Schema({
         type : String,
         required : true
     },
-    communitySearchTags : {
+    searchTags : {
         type : [String],
         required : true
     }

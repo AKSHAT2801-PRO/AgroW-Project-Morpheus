@@ -7,17 +7,18 @@ const userRouter = require('./Routes/user')
 const communityRouter = require('./Routes/community')
 const contentRouter = require('./Routes/content')
 const dashboardRouter = require('./Routes/dashboard')
-
+const {logger} = require("./middlewares/logs")
 // creating the app
 const app = express();
 // adding middleware
-app.use(express.json());
+app.use(express.json(extended = true));
 app.use(cors({
     origin: "*",
     methods: ["GET","POST","PUT","DELETE","PATCH"],
     allowedHeaders: ["Content-Type"]
 }))
 app.use(express.urlencoded({ extended: false }));
+app.use(logger)
 
 // connecting MONGO DB
 connectDb(process.env.MongoDB_URL)
@@ -29,8 +30,7 @@ app.use("/api/content",contentRouter)
 app.use("/api/dashboard",dashboardRouter)
 
 
-
-
+// checking credibility score every 24 hours
 //Defining Port
 const PORT  = process.env.PORT || 8055;
 
