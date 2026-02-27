@@ -8,7 +8,7 @@ const likeContent = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$push : {likedBy : email}}).then(() => {
+    await Content.findByIdAndUpdate(contentId, {$push : {likes : email}}).then(() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
             Farmer.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
         }
@@ -26,7 +26,7 @@ const removeLike = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$pull : {likedBy : email}}
+    await Content.findByIdAndUpdate(contentId, {$pull : {likes : email}}
     ).then(() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
             Farmer.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
@@ -45,13 +45,13 @@ const dislikeContent = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$pull : {likedBy : email}}
+    await Content.findByIdAndUpdate(contentId, {$push : {dislikes : email}}
     ).then(() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-            Farmer.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
+            Farmer.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
         }
         else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-            ServiceProvider.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
+            ServiceProvider.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
         }   
     }).then(() => {
         res.status(200).json({message : "Content disliked successfully"});
@@ -64,7 +64,7 @@ const removeDislike = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$pull : {dislikedBy : email}}
+    await Content.findByIdAndUpdate(contentId, {$pull : {dislikes : email}}
     ).then(() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
             Farmer.findOneAndUpdate({email : email}, {$pull : {dislikedContent : contentId}})
@@ -109,19 +109,20 @@ const removeContent = async (req, res) => {
     });
 }
 
-const setComment = async (req, res) => {
+const setComment = async (req,res) => {
     const body = req.body;
+    console.log(body)
     const comment = new Comment(body);
-    await comment.save().then(()=>{
-            Content.findByIdAndUpdate(body.contentId, {$push : {comments : comment._id}}).catch((err) => {
-                res.status(500).json({message : "Internal server error"});
-            });
+    comment.save().then(()=>{
+        Content.findByIdAndUpdate(body.contentId, {$push : {comments : comment._id}}).catch((err) => {
+            res.status(500).json({message : "Internal server error1"});
+        });
 
     })
     .then(() => {
         res.status(201).json({message : "Comment added successfully"});
     }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
+        res.status(500).json({message : err});
     });
 }
 

@@ -32,8 +32,6 @@ app.use("/api/community",communityRouter)
 app.use("/api/content",contentRouter)
 app.use("/api/dashboard",dashboardRouter)
 
-
-// checking credibility score every 24 hours
 //Defining Port
 const PORT  = process.env.PORT || 8055;
 
