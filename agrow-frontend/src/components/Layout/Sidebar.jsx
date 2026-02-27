@@ -8,11 +8,21 @@ import {
 const Sidebar = ({ isOpen, toggleSidebar }) => {
     const location = useLocation();
     const [userRole, setUserRole] = useState('farmer');
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         // Mock fetching user role from localStorage
         const role = localStorage.getItem('userRole') || 'farmer';
         setUserRole(role);
+    }, []);
+
+    // Listen for custom communityMembershipChanged event to refresh community list
+    useEffect(() => {
+        const handleMembershipChange = () => {
+            setRefreshKey(prev => prev + 1);
+        };
+        window.addEventListener('communityMembershipChanged', handleMembershipChange);
+        return () => window.removeEventListener('communityMembershipChanged', handleMembershipChange);
     }, []);
 
     const MOCK_COMMUNITIES = [
@@ -93,8 +103,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                                     to={`/c/${comm.id}`}
                                     onClick={() => { if (window.innerWidth < 1024) toggleSidebar() }}
                                     className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isCurrentPath(`/c/${comm.id}`)
-                                            ? 'bg-green-50 text-green-800 font-bold'
-                                            : 'text-slate-600 hover:bg-slate-50'
+                                        ? 'bg-green-50 text-green-800 font-bold'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                 >
                                     <div className={`w-8 h-8 rounded-full ${comm.color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>

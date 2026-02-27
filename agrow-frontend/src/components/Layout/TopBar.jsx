@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    Menu, Search, Plus, Sun, Moon, Languages,
+    Menu, Search, Plus, Sun, Moon, Languages, Leaf,
     Bell, ChevronDown, User, Settings, LogOut, CheckCircle
 } from 'lucide-react';
 import { useUser, useClerk } from '@clerk/clerk-react';
@@ -90,7 +90,8 @@ const TopBar = ({ toggleSidebar }) => {
                     <Menu size={24} />
                 </button>
                 <Link to="/feed" className="items-center gap-2 hidden sm:flex">
-                    <span className="text-2xl font-black text-green-700 tracking-tight hidden xs:block">AgroW</span>
+                    <Leaf className="text-green-700" size={24} strokeWidth={2.5} />
+                    <span className="text-2xl font-black text-slate-900 tracking-tight hidden xs:block">AgroW</span>
                 </Link>
             </div>
 

@@ -17,7 +17,7 @@ const BottomNav = () => {
             >
                 {/* Active Indicator Bar */}
                 {isActive && (
-                    <div className="absolute top-0 w-12 h-1 bg-green-500 rounded-b-full animate-in zoom-in duration-200"></div>
+                    <div className="absolute top-0 w-12 h-1 bg-green-500 rounded-b-full animate-nav-indicator"></div>
                 )}
                 <Icon
                     size={24}

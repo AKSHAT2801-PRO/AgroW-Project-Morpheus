@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Sprout, Tractor, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Sprout, Tractor, ArrowLeft, CheckCircle2, Leaf } from 'lucide-react';
 import { SignIn, SignUp } from '@clerk/clerk-react';
 
 const AuthPage = () => {
@@ -50,7 +50,7 @@ const AuthPage = () => {
                 {/* Logo / Header */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 bg-green-600 rounded-xl mb-4 shadow-lg">
-                        <span className="text-white font-bold text-2xl">A</span>
+                        <Leaf className="text-white" size={24} strokeWidth={2.5} />
                     </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2">Welcome to AgroW</h1>
                     <p className="text-slate-600">
