@@ -1,14 +1,20 @@
 import React from 'react';
-import Navbar from '../components/Layout/Navbar';
-import Footer from '../components/Layout/Footer';
+import Navbar from '../components/landing/Navbar';
+import HeroSection from '../components/landing/HeroSection';
+import FeaturesGrid from '../components/landing/FeaturesGrid';
+import WhyAgroW from '../components/landing/WhyAgroW';
+import Testimonials from '../components/landing/Testimonials';
+import Footer from '../components/landing/Footer';
 
 const HomePage = () => {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div className="w-full flex flex-col font-sans bg-slate-50 overflow-x-hidden">
             <Navbar />
-            <main style={{ flex: 1 }}>
-                <h1>Home Page</h1>
-                <p>Landing page content will go here.</p>
+            <main className="flex-grow pt-16"> {/* Add top padding for fixed navbar */}
+                <HeroSection />
+                <FeaturesGrid />
+                <WhyAgroW />
+                <Testimonials />
             </main>
             <Footer />
         </div>

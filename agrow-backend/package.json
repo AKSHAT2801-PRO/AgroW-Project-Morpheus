@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/AKSHAT2801-PRO/AgroW-Project-Morpheus/issues"
   },
-  "homepage": "https://github.com/AKSHAT2801-PRO/AgroW-Project-Morpheus#readme"
+  "homepage": "https://github.com/AKSHAT2801-PRO/AgroW-Project-Morpheus#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1"
+  }
 }
