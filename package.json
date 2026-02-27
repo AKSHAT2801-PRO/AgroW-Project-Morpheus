@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@clerk/clerk-react": "^5.61.2",
+    "lucide-react": "^0.575.0",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.13.1"
+  }
+}
