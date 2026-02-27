@@ -1,3 +1,4 @@
+const mongoose = require("mongoose")
 const communitySchema = new mongoose.Schema({
     communityName : {
         type : String,
@@ -40,6 +41,6 @@ const communitySchema = new mongoose.Schema({
     }
 })
 
-const Communiyt = mongoose.model("Communities", communitySchema)
+const Community = mongoose.model("Communities", communitySchema)
 
 module.exports = Community;

@@ -1,8 +1,12 @@
 // Importing Modules required for the App
+require('dotenv').config();
 const express = require('express')
 const cors = require('cors')
 const {connectDb} = require('./connectDb')
-require('dotenv').config();
+const userRouter = require('./Routes/user')
+const communityRouter = require('./Routes/community')
+const contentRouter = require('./Routes/content')
+const dashboardRouter = require('./Routes/dashboard')
 
 // creating the app
 const app = express();
@@ -17,6 +21,15 @@ app.use(express.urlencoded({ extended: false }));
 
 // connecting MONGO DB
 connectDb(process.env.MongoDB_URL)
+
+// Setting Routes
+app.use("/api/user",userRouter)
+app.use("/api/community",communityRouter)
+app.use("/api/content",contentRouter)
+app.use("/api/dashboard",dashboardRouter)
+
+
+
 
 //Defining Port
 const PORT  = process.env.PORT || 8055;
