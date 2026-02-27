@@ -5,6 +5,12 @@ import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
 import FeedPage from './pages/FeedPage';
 import DashboardLayout from './components/Layout/DashboardLayout';
+import CommunityPage from './pages/CommunityPage';
+import CommunitiesListPage from './pages/CommunitiesListPage';
+import CreateCommunityPage from './pages/CreateCommunityPage';
+import CreatePostPage from './pages/CreatePostPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 
 // Dummy publishable key for UI development
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_ZHVtbXlrZXk=";
@@ -21,6 +27,15 @@ function App() {
                     {/* Authenticated Routes with Dashboard Layout */}
                     <Route element={<DashboardLayout />}>
                         <Route path="/feed" element={<FeedPage />} />
+                        <Route path="/c/:communityId" element={<CommunityPage />} />
+                        <Route path="/c/communities" element={<CommunitiesListPage />} />
+                        <Route path="/communities" element={<CommunitiesListPage />} /> {/* Fallback alias */}
+                        <Route path="/create-community" element={<CreateCommunityPage />} />
+
+                        {/* New Core Pages */}
+                        <Route path="/submit" element={<CreatePostPage />} />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/settings" element={<SettingsPage />} />
                     </Route>
                 </Routes>
             </Router>
