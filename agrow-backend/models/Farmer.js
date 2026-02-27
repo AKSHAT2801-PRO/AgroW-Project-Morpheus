@@ -26,7 +26,8 @@ const farmersSchema = new mongoose.Schema({
         required : true
     },
     credibilityScore : {
-        type : Number
+        type : Number,
+        default : 50
     },
     state : {
         type : String,

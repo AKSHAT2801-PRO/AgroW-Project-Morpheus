@@ -40,8 +40,13 @@ const contentSchema = new mongoose.Schema({
     },
     dislikes : {
         type : [String],
+    },
+    media : {
+        type : String,
+    },
+    mediaType : {
+        type : String,
     }
-    // For MVP no media is Allowed, but in future we can add media support for content
 })
 
 const Content = mongoose.model("Contents", contentSchema)

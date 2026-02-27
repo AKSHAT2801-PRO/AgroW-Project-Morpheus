@@ -111,6 +111,18 @@ getContent = async (req, res) => {
 createContent = async (req, res) => {
     const body = req.body;
     const role = req.body.userRole;
+    const title = body.title;
+    const description = body.description;
+    const category = body.category;
+    const tags = body.tags;
+    const postedBy = body.postedBy;
+    const communityId = body.communityId;
+    const createdOn = body.createdOn;
+    const comments = body.comments;
+    const likes = body.likes;
+    const dislikes = body.dislikes;
+    const media = req.file ? req.file.path : null;
+    const mediaType = req.file ? req.file.mimetype : null;
 
     const data = {
         title : body.title,
@@ -119,7 +131,22 @@ createContent = async (req, res) => {
     const credibility_data = await fetchCredibility(data);
     const credibility = credibility_data.updatedCredibility;
 
-    await Content.create(body).then((content) => {
+
+
+    await Content.create({
+        title,
+        description,
+        category,
+        tags,
+        postedBy,
+        communityIds : [communityId],
+        createdOn,
+        comments,
+        likes,
+        dislikes,
+        media,
+        mediaType
+    }).then((content) => {
         Community.findByIdAndUpdate(body.communityId, {$push : {content : content._id}}).then(() => {
             res.status(201).json({message : "Content created successfully"});
         }).then(async ()=>{
@@ -127,13 +154,35 @@ createContent = async (req, res) => {
                 Farmer.findOneAndUpdate({email : body.email}, {$push : {content : content._id}})
                 const farmer = await Farmer.findOne({email : body.email})
                 const prevCred = farmer.credibilityScore;
-                const newCred = (prevCred + credibility) / 2;
-                await Farmer.findOneAndUpdate({email : body.email}, {credibilityScore : newCred}).catch((err) => {
-                    res.status(500).json({message : "Internal server error"});
-                });
+                if (prevCred === 0) {
+                    await Farmer.findOneAndUpdate({email : body.email}, {credibilityScore : credibility}).catch((err) => {
+                        res.status(500).json({message : "Internal server error"});
+                    });
+                }
+                else{
+                    const newCred = (prevCred + credibility) / 2;
+                    await Farmer.findOneAndUpdate({email : body.email}, {credibilityScore : newCred}).catch((err) => {
+                        res.status(500).json({message : "Internal server error"});
+                    });
+                }
+                
             }
             else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
                 ServiceProvider.findOneAndUpdate({email : body.email}, {$push : {content : content._id}})
+                const servicProvider = await ServiceProvider.findOne({email : body.email})
+                const prevCred = servicProvider.credibilityScore;
+                if (prevCred === 0) {
+                    await ServiceProvider.findOneAndUpdate({email : body.email}, {credibilityScore : credibility}).catch((err) => {
+                        res.status(500).json({message : "Internal server error"});
+                    });
+                }
+                else{
+                    const newCred = (prevCred + credibility) / 2;
+                    await ServiceProvider.findOneAndUpdate({email : body.email}, {credibilityScore : newCred}).catch((err) => {
+                        res.status(500).json({message : "Internal server error"});
+                    });
+                }
+                
             }
         }).catch((err) => {
             res.status(500).json({message : "Internal server error"});

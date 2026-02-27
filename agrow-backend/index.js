@@ -8,9 +8,12 @@ const communityRouter = require('./Routes/community')
 const contentRouter = require('./Routes/content')
 const dashboardRouter = require('./Routes/dashboard')
 const {logger} = require("./middlewares/logs")
+const path = require("path")
 // creating the app
 const app = express();
 // adding middleware
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json(extended = true));
 app.use(cors({
     origin: "*",
