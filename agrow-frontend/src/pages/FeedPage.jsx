@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Image as ImageIcon, Mic, MoreHorizontal, Trash2,
-    ThumbsUp, MessageSquare, Share2, X, Leaf, Link,
-    Send, Plus, Copy
+    MoreHorizontal, Trash2,
+    ThumbsUp, ThumbsDown, MessageSquare, Share2, X, Leaf,
+    Send, Plus, Copy, Shield
 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 
@@ -20,7 +20,7 @@ const FILTERS = ['Trending', 'News', 'New', 'Top', 'Knowledge', 'Doubts'];
 const MOCK_POSTS = [
     {
         id: 'p1',
-        author: { name: 'Ramesh Shinde', username: 'ramesh_s' },
+        author: { name: 'Ramesh Shinde', username: 'ramesh_s', credibility: 78 },
         community: { id: 'c3', name: 'Nashik Grape Growers' },
         date: '2 hours ago',
         title: 'Best pruning techniques for Thompson Seedless?',
@@ -28,15 +28,17 @@ const MOCK_POSTS = [
         body: 'My vines are showing excessive vegetative growth this season. What pruning strategy should I adopt to balance growth and ensure good cluster formation?\n\nAny advice is appreciated.',
         image: 'https://images.unsplash.com/photo-1596489391152-16782255d6b4?w=800&q=80',
         likes: 24,
+        dislikes: 2,
         isLikedByUser: false,
+        isDislikedByUser: false,
         comments: [
-            { id: 'cm1', author: 'Dr. Patil', text: 'You should consider dormant pruning taking out 20-30% of the canes.', isOwn: false }
+            { id: 'cm1', author: 'Dr. Patil', text: 'You should consider dormant pruning taking out 20-30% of the canes.', isOwn: false, likes: 5, dislikes: 0, isLikedByUser: false, isDislikedByUser: false }
         ],
         isOwn: false,
     },
     {
         id: 'p2',
-        author: { name: 'Kisan Admin', username: 'admin' },
+        author: { name: 'Kisan Admin', username: 'admin', credibility: 95 },
         community: { id: 'c4', name: 'Organic Farming Hub' },
         date: '5 hours ago',
         title: 'Step by Step: Making Jeevamrutha at home',
@@ -44,7 +46,9 @@ const MOCK_POSTS = [
         body: 'Jeevamrutha is an excellent organic fertilizer. Here is what you need:\n1. 10 kg native cow dung\n2. 10 L native cow urine\n3. 1 kg jaggery\n4. 1 kg gram flour\n\nMix well and let it ferment for 48 hours.',
         image: null,
         likes: 156,
+        dislikes: 3,
         isLikedByUser: true,
+        isDislikedByUser: false,
         comments: [],
         isOwn: true,
     }
@@ -84,14 +88,12 @@ const FeedPage = () => {
     const [imageModal, setImageModal] = useState({ isOpen: false, url: '' });
     const [shareModal, setShareModal] = useState({ isOpen: false, post: null });
 
-    // Simulate Network Fetch
     useEffect(() => {
         setIsLoading(true);
         const timer = setTimeout(() => {
             if (activeFilter === 'News') {
-                setPosts(MOCK_NEWS); // Render news differently
+                setPosts(MOCK_NEWS);
             } else {
-                // Filter mock posts based on tag (basic implementation)
                 let filtered = MOCK_POSTS;
                 if (activeFilter === 'Knowledge') filtered = MOCK_POSTS.filter(p => p.tags.includes('Knowledge'));
                 if (activeFilter === 'Doubts') filtered = MOCK_POSTS.filter(p => p.tags.includes('Doubt'));
@@ -102,29 +104,100 @@ const FeedPage = () => {
         return () => clearTimeout(timer);
     }, [activeFilter]);
 
-    // Handle Image Click (Zoom)
     const [isZoomed, setIsZoomed] = useState(false);
 
-    // Helpers
     const getInitials = (name) => name ? name.charAt(0).toUpperCase() : '?';
 
     const getTagStyles = (tag) => {
         switch (tag) {
-            case 'Knowledge': return 'bg-[#E3F2FD] text-[#1565C0]'; // blue
-            case 'Showcase': return 'bg-[#F3E5F5] text-[#7B1FA2]'; // purple
-            case 'Doubt': return 'bg-[#FFEBEE] text-[#C62828]'; // red
+            case 'Knowledge': return 'bg-[#E3F2FD] text-[#1565C0]';
+            case 'Showcase': return 'bg-[#F3E5F5] text-[#7B1FA2]';
+            case 'Doubt': return 'bg-[#FFEBEE] text-[#C62828]';
             default: return 'bg-slate-100 text-slate-600';
         }
+    };
+
+    const getCredibilityColor = (score) => {
+        if (score >= 80) return 'text-green-700 bg-green-50 border-green-200';
+        if (score >= 50) return 'text-amber-700 bg-amber-50 border-amber-200';
+        return 'text-red-700 bg-red-50 border-red-200';
     };
 
     // Actions
     const handleLike = (postId) => {
         setPosts(posts.map(post => {
             if (post.id === postId) {
+                const wasLiked = post.isLikedByUser;
                 return {
                     ...post,
-                    isLikedByUser: !post.isLikedByUser,
-                    likes: post.isLikedByUser ? post.likes - 1 : post.likes + 1
+                    isLikedByUser: !wasLiked,
+                    isDislikedByUser: false,
+                    likes: wasLiked ? post.likes - 1 : post.likes + 1,
+                    dislikes: post.isDislikedByUser ? post.dislikes - 1 : post.dislikes
+                };
+            }
+            return post;
+        }));
+    };
+
+    const handleDislike = (postId) => {
+        setPosts(posts.map(post => {
+            if (post.id === postId) {
+                const wasDisliked = post.isDislikedByUser;
+                return {
+                    ...post,
+                    isDislikedByUser: !wasDisliked,
+                    isLikedByUser: false,
+                    dislikes: wasDisliked ? post.dislikes - 1 : post.dislikes + 1,
+                    likes: post.isLikedByUser ? post.likes - 1 : post.likes
+                };
+            }
+            return post;
+        }));
+    };
+
+    const handleCommentLike = (postId, commentId) => {
+        setPosts(posts.map(post => {
+            if (post.id === postId) {
+                return {
+                    ...post,
+                    comments: post.comments.map(c => {
+                        if (c.id === commentId) {
+                            const wasLiked = c.isLikedByUser;
+                            return {
+                                ...c,
+                                isLikedByUser: !wasLiked,
+                                isDislikedByUser: false,
+                                likes: wasLiked ? c.likes - 1 : c.likes + 1,
+                                dislikes: c.isDislikedByUser ? c.dislikes - 1 : c.dislikes
+                            };
+                        }
+                        return c;
+                    })
+                };
+            }
+            return post;
+        }));
+    };
+
+    const handleCommentDislike = (postId, commentId) => {
+        setPosts(posts.map(post => {
+            if (post.id === postId) {
+                return {
+                    ...post,
+                    comments: post.comments.map(c => {
+                        if (c.id === commentId) {
+                            const wasDisliked = c.isDislikedByUser;
+                            return {
+                                ...c,
+                                isDislikedByUser: !wasDisliked,
+                                isLikedByUser: false,
+                                dislikes: wasDisliked ? c.dislikes - 1 : c.dislikes + 1,
+                                likes: c.isLikedByUser ? c.likes - 1 : c.likes
+                            };
+                        }
+                        return c;
+                    })
                 };
             }
             return post;
@@ -157,64 +230,31 @@ const FeedPage = () => {
             alert('Copied to clipboard!');
             return;
         }
-        alert(`Shared to ${communitySelected.name}! (Simulated api.createContent())`);
+        alert(`Shared to ${communitySelected.name}!`);
         setShareModal({ isOpen: false, post: null });
     };
 
     return (
-        <div className="min-h-screen bg-[#F0F2F5] pb-20 pt-16 font-sans">
+        <div className="min-h-screen bg-[#F0F2F5] pb-20 font-sans">
 
-            {/* Top Navigation Bar placeholder (Assuming global nav is fixed outside, but we pad top) */}
+            <main className="max-w-[1100px] mx-auto px-4 sm:px-6 w-full mt-4 space-y-5">
 
-            <main className="max-w-[900px] mx-auto px-4 sm:px-6 w-full mt-6 space-y-6">
-
-                {/* 1. Create Post Widget */}
+                {/* 1. User Communities Row */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-                    <div className="flex gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold flex items-center justify-center flex-shrink-0">
-                            {getInitials(currentUser.name)}
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="What's on your mind?"
-                            onClick={() => navigate('/submit')}
-                            readOnly
-                            className="bg-slate-100 hover:bg-slate-200 transition-colors w-full rounded-full px-5 py-2 cursor-pointer outline-none text-slate-600"
-                        />
-                    </div>
-                    <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-                        <div className="flex gap-2">
-                            <button onClick={() => navigate('/submit?action=image')} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 rounded-xl text-slate-500 transition-colors">
-                                <ImageIcon size={20} className="text-green-500" />
-                                <span className="text-sm font-medium hidden sm:inline">Image</span>
-                            </button>
-                            <button onClick={() => navigate('/submit?action=voice')} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 rounded-xl text-slate-500 transition-colors">
-                                <Mic size={20} className="text-blue-500" />
-                                <span className="text-sm font-medium hidden sm:inline">Voice</span>
-                            </button>
-                        </div>
-                        <button onClick={() => navigate('/submit')} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 px-6 rounded-full transition-colors text-sm shadow-sm">
-                            Post
-                        </button>
-                    </div>
-                </div>
-
-                {/* 2. User Communities Row */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-                    <h3 className="text-sm font-bold text-slate-700 mb-3">Your Communities</h3>
+                    <h3 className="text-sm font-bold text-slate-800 mb-3">Your Communities</h3>
                     <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
                         <div onClick={() => navigate('/communities')} className="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] group">
                             <div className="w-14 h-14 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:border-green-500 group-hover:text-green-500 transition-colors">
                                 <Plus size={24} />
                             </div>
-                            <span className="text-xs font-medium text-slate-600 text-center leading-tight">Join<br />New</span>
+                            <span className="text-xs font-medium text-slate-700 text-center leading-tight">Join<br />New</span>
                         </div>
                         {MOCK_COMMUNITIES.map(comm => (
-                            <div key={comm.id} className="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] group">
+                            <div key={comm.id} onClick={() => navigate(`/c/${comm.id}`)} className="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] group">
                                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white font-bold text-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow ring-2 ring-white transform group-hover:-translate-y-1 duration-200">
                                     {getInitials(comm.name)}
                                 </div>
-                                <span className="text-xs font-medium text-slate-700 text-center leading-tight overflow-hidden text-ellipsis line-clamp-2 w-full">
+                                <span className="text-xs font-medium text-slate-800 text-center leading-tight overflow-hidden text-ellipsis line-clamp-2 w-full">
                                     {comm.name}
                                 </span>
                             </div>
@@ -222,7 +262,7 @@ const FeedPage = () => {
                     </div>
                 </div>
 
-                {/* 3. Filter Bar */}
+                {/* 2. Filter Bar */}
                 <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
                     {FILTERS.map(filter => {
                         const isActive = activeFilter === filter;
@@ -231,8 +271,8 @@ const FeedPage = () => {
                                 key={filter}
                                 onClick={() => setActiveFilter(filter)}
                                 className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold transition-all border ${isActive
-                                        ? 'bg-[#E8F5E9] text-[#1B5E20] border-[#2E7D32]'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    ? 'bg-[#E8F5E9] text-[#1B5E20] border-[#2E7D32]'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                                     }`}
                             >
                                 {filter}
@@ -241,7 +281,7 @@ const FeedPage = () => {
                     })}
                 </div>
 
-                {/* 4. Posts Feed */}
+                {/* 3. Posts Feed */}
                 <div className="space-y-4">
 
                     {/* Loading State */}
@@ -253,7 +293,7 @@ const FeedPage = () => {
                                     <Leaf size={64} strokeWidth={0} fill="currentColor" />
                                 </div>
                             </div>
-                            <p className="mt-4 font-bold text-slate-400 animate-pulse">Growing your feed...</p>
+                            <p className="mt-4 font-bold text-slate-500 animate-pulse">Growing your feed...</p>
                         </div>
                     )}
 
@@ -264,7 +304,7 @@ const FeedPage = () => {
                                 <Leaf className="text-slate-300" size={32} />
                             </div>
                             <h3 className="text-xl font-bold text-slate-800 mb-2">No posts yet</h3>
-                            <p className="text-slate-500 mb-6">Be the first to share something with the community.</p>
+                            <p className="text-slate-600 mb-6">Be the first to share something with the community.</p>
                             <button onClick={() => navigate('/submit')} className="bg-green-600 text-white py-2 px-6 rounded-lg font-bold hover:bg-green-700 transition-colors">
                                 Create Post
                             </button>
@@ -299,7 +339,14 @@ const FeedPage = () => {
                                         {getInitials(post.author.name)}
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-slate-900 text-sm hover:underline cursor-pointer">{post.author.name}</h4>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h4 className="font-bold text-slate-900 text-sm hover:underline cursor-pointer">{post.author.name}</h4>
+                                            {/* Credibility Score */}
+                                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded border ${getCredibilityColor(post.author.credibility)}`}>
+                                                <Shield size={10} />
+                                                {post.author.credibility}/100
+                                            </span>
+                                        </div>
                                         <p className="text-xs text-slate-500 flex items-center gap-1">
                                             <span className="font-medium hover:text-slate-700 cursor-pointer">{post.community.name}</span>
                                             <span>•</span>
@@ -329,7 +376,7 @@ const FeedPage = () => {
                                     ))}
                                 </div>
                                 <h3 className="text-lg font-bold text-slate-900 mb-2">{post.title}</h3>
-                                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">
                                     {post.body}
                                 </p>
                             </div>
@@ -346,30 +393,36 @@ const FeedPage = () => {
                                 </div>
                             )}
 
-                            {/* Actions Bar */}
-                            <div className="px-2 py-1 mx-4 border-t border-slate-100 flex justify-between items-center text-slate-500">
-                                <div className="flex gap-1">
+                            {/* Actions Bar — Separate Like & Dislike */}
+                            <div className="px-3 py-1.5 mx-3 border-t border-slate-100 flex justify-between items-center text-slate-500">
+                                <div className="flex items-center gap-0.5">
                                     <button
                                         onClick={() => handleLike(post.id)}
-                                        className={`flex items-center gap-2 p-2 rounded-xl transition-colors font-semibold text-sm ${post.isLikedByUser ? 'text-[#EF6C00] hover:bg-orange-50' : 'hover:bg-slate-50'
-                                            }`}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-semibold text-sm ${post.isLikedByUser ? 'text-green-700 bg-green-50' : 'hover:bg-slate-50'}`}
                                     >
-                                        <ThumbsUp size={20} className={post.isLikedByUser ? 'fill-current' : ''} />
+                                        <ThumbsUp size={18} className={post.isLikedByUser ? 'fill-current' : ''} />
                                         <span>{post.likes}</span>
                                     </button>
                                     <button
-                                        onClick={() => toggleComments(post.id)}
-                                        className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-xl transition-colors font-semibold text-sm"
+                                        onClick={() => handleDislike(post.id)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-semibold text-sm ${post.isDislikedByUser ? 'text-red-600 bg-red-50' : 'hover:bg-slate-50'}`}
                                     >
-                                        <MessageSquare size={20} />
+                                        <ThumbsDown size={18} className={post.isDislikedByUser ? 'fill-current' : ''} />
+                                        <span>{post.dislikes}</span>
+                                    </button>
+                                    <button
+                                        onClick={() => toggleComments(post.id)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-lg transition-colors font-semibold text-sm"
+                                    >
+                                        <MessageSquare size={18} />
                                         <span>{post.comments.length}</span>
                                     </button>
                                 </div>
                                 <button
                                     onClick={() => setShareModal({ isOpen: true, post: post })}
-                                    className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-xl transition-colors font-semibold text-sm"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-lg transition-colors font-semibold text-sm"
                                 >
-                                    <Share2 size={20} />
+                                    <Share2 size={18} />
                                     <span className="hidden sm:inline">Share</span>
                                 </button>
                             </div>
@@ -386,7 +439,7 @@ const FeedPage = () => {
                                             <input
                                                 type="text"
                                                 placeholder="Write a comment..."
-                                                className="w-full px-3 py-2 outline-none text-sm text-slate-700"
+                                                className="w-full px-3 py-2 outline-none text-sm text-slate-800"
                                             />
                                             <button className="px-3 text-green-600 hover:bg-green-50 transition-colors font-bold text-sm">
                                                 Post
@@ -394,7 +447,7 @@ const FeedPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* List Comments (Reverse Chronological mock) */}
+                                    {/* List Comments with likes/dislikes */}
                                     {[...post.comments].reverse().map(comment => (
                                         <div key={comment.id} className="flex gap-2 group">
                                             <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 text-xs">
@@ -403,10 +456,22 @@ const FeedPage = () => {
                                             <div className="flex-grow">
                                                 <div className="bg-white px-3 py-2 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm inline-block max-w-full">
                                                     <span className="font-bold text-slate-900 text-sm block mb-0.5">{comment.author}</span>
-                                                    <span className="text-slate-700 text-sm whitespace-pre-wrap">{comment.text}</span>
+                                                    <span className="text-slate-800 text-sm whitespace-pre-wrap">{comment.text}</span>
                                                 </div>
-                                                <div className="flex items-center gap-3 mt-1 ml-2 text-[10px] font-bold text-slate-400">
+                                                <div className="flex items-center gap-3 mt-1 ml-1 text-[11px] font-bold text-slate-400">
                                                     <span>Just now</span>
+                                                    <button
+                                                        onClick={() => handleCommentLike(post.id, comment.id)}
+                                                        className={`flex items-center gap-1 hover:text-green-600 ${comment.isLikedByUser ? 'text-green-600' : ''}`}
+                                                    >
+                                                        <ThumbsUp size={12} className={comment.isLikedByUser ? 'fill-current' : ''} /> {comment.likes}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCommentDislike(post.id, comment.id)}
+                                                        className={`flex items-center gap-1 hover:text-red-500 ${comment.isDislikedByUser ? 'text-red-500' : ''}`}
+                                                    >
+                                                        <ThumbsDown size={12} className={comment.isDislikedByUser ? 'fill-current' : ''} /> {comment.dislikes}
+                                                    </button>
                                                     <button className="hover:text-slate-700">Reply</button>
                                                     {comment.isOwn && (
                                                         <button onClick={() => deleteComment(post.id, comment.id)} className="hover:text-red-500">Delete</button>
@@ -424,7 +489,7 @@ const FeedPage = () => {
 
             {/* Modals */}
 
-            {/* 5. Share Modal */}
+            {/* Share Modal */}
             {shareModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
@@ -454,8 +519,8 @@ const FeedPage = () => {
                                         onClick={() => !isCurrentCommunity && handleShare(comm)}
                                         disabled={isCurrentCommunity}
                                         className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${isCurrentCommunity
-                                                ? 'opacity-50 cursor-not-allowed bg-slate-50'
-                                                : 'hover:bg-green-50 hover:text-green-800'
+                                            ? 'opacity-50 cursor-not-allowed bg-slate-50'
+                                            : 'hover:bg-green-50 hover:text-green-800'
                                             }`}
                                     >
                                         <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 flex-shrink-0">
@@ -474,7 +539,7 @@ const FeedPage = () => {
                 </div>
             )}
 
-            {/* 6. Fullscreen Image Modal */}
+            {/* Fullscreen Image Modal */}
             {imageModal.isOpen && (
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md cursor-zoom-out animate-in fade-in duration-200"

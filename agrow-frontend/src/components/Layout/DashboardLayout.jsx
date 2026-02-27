@@ -6,11 +6,12 @@ import BottomNav from './BottomNav';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+    const toggleCollapse = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
     useEffect(() => {
-        // Enforce mock data in localStorage on mount if absent (simulating api fetch)
         if (!localStorage.getItem('userRole')) {
             localStorage.setItem('userRole', 'farmer');
         }
@@ -22,11 +23,11 @@ const DashboardLayout = () => {
     return (
         <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
 
-            <TopBar toggleSidebar={toggleSidebar} />
+            <TopBar toggleSidebar={toggleSidebar} toggleCollapse={toggleCollapse} isSidebarCollapsed={isSidebarCollapsed} />
 
             <div className="flex flex-1 overflow-hidden relative">
 
-                <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+                <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} isCollapsed={isSidebarCollapsed} toggleCollapse={toggleCollapse} />
 
                 {/* Main Content Area */}
                 <main className="flex-1 overflow-y-auto w-full relative pb-20 md:pb-0 scroll-smooth">

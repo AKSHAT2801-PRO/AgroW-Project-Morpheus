@@ -1,462 +1,642 @@
 import React, { useState, useEffect } from 'react';
+import {
+    ArrowLeft, ArrowRight, MapPin, Sprout, Tractor,
+    CheckCircle, ChevronDown, Check, RefreshCw, Lock
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
-import { ChevronRight, ArrowLeft, Check, Leaf } from 'lucide-react';
-// import { State, District } from 'india-state-district'; // Will handle if actual data needed, providing static fallback
-
-const INTERESTS_LIST = [
-    "Organic Farming", "Crop Disease", "Government Schemes", "Market Prices",
-    "Modern Farming", "Water Management", "Soil Testing", "Seed Selection",
-    "Livestock", "Weather Updates", "Pest Control", "Tractor Trading"
-];
-
-const MOCK_COMMUNITIES = [
-    { id: 'c1', name: 'Maharashtra Cotton Farmers', members: 1200 },
-    { id: 'c2', name: 'Pune Dairy Tech', members: 850 },
-    { id: 'c3', name: 'Nashik Grape Growers', members: 3400 },
-    { id: 'c4', name: 'Organic Farming Hub', members: 5600 },
-    { id: 'c5', name: 'Tractor Owners Association', members: 920 }
-];
-
-const IndianStates = [
-    "Maharashtra", "Gujarat", "Karnataka", "Punjab", "Haryana",
-    "Uttar Pradesh", "Madhya Pradesh", "Rajasthan"
-];
-
-const StateDistricts = {
-    "Maharashtra": ["Pune", "Nashik", "Mumbai", "Solapur", "Latur", "Nagpur"],
-    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot"],
-    "Karnataka": ["Bangalore", "Mysore", "Hubli", "Mangalore"],
-    "Punjab": ["Amritsar", "Ludhiana", "Jalandhar", "Patiala"],
-};
+import { api } from '../services/api';
+import { getAllStates, getDistricts } from 'india-state-district';
+import toast from 'react-hot-toast';
+import styles from './OnboardingPage.module.css';
 
 const OnboardingPage = () => {
     const navigate = useNavigate();
     const { user } = useUser();
-
-    // Auth context mock fallback
-    const mockEmail = user?.primaryEmailAddress?.emailAddress || "user@example.com";
-    const userRole = localStorage.getItem('userRole') || 'farmer';
-
+    // State
+    const [role, setRole] = useState(() => localStorage.getItem('userRole') || 'farmer');
     const [step, setStep] = useState(1);
-
-    // Step 1: Profile
-    const [profile, setProfile] = useState({ username: '', firstName: '', lastName: '', gender: '' });
-
-    // Step 2: Location
-    const [location, setLocation] = useState({ state: '', district: '', taluka: '', village: '' });
-    const availableDistricts = location.state ? (StateDistricts[location.state] || ["Other District"]) : [];
-
-    // Step 3: Role Details (Crops or Services)
-    const [roleDetails, setRoleDetails] = useState('');
-
-    // Step 4: Interests
-    const [interests, setInterests] = useState([]);
-
-    // Step 5: Communities
-    const [communities, setCommunities] = useState([]);
-
-    // UI states
-    const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        username: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        gender: '',
+        address: '',
+        state: '',
+        stateCode: '',
+        district: '',
+        taluka: '',
+        village: '',
+        crops: [],
+        farmSize: '',
+        interests: [],
+        services: [],
+        communities: [],
+        otherServiceType: '',
+        serviceDesc: ''
+    });
 
-    // Validate current step
-    const validateStep = () => {
-        setError('');
+    const [availableCommunities, setAvailableCommunities] = useState([]);
+    const [isLoadingCommunities, setIsLoadingCommunities] = useState(false);
+
+    const fetchAllComms = async () => {
+        setIsLoadingCommunities(true);
+        try {
+            const res = await api.getAllCommunities();
+            const data = res.data || res;
+            if (Array.isArray(data)) {
+                setAvailableCommunities(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch communities for onboarding", error);
+        } finally {
+            setIsLoadingCommunities(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAllComms();
+    }, []);
+
+    // Prefill email from Clerk user session
+    useEffect(() => {
+        if (user?.primaryEmailAddress?.emailAddress) {
+            setFormData(prev => ({ ...prev, email: user.primaryEmailAddress.emailAddress }));
+        }
+    }, [user]);
+
+    // Mock Data
+    const interestsList = [
+        { id: 'schemes', label: 'Government Schemes' },
+        { id: 'modern', label: 'Modern Farming Practices' },
+        { id: 'organic', label: 'Organic Farming' },
+        { id: 'machinery', label: 'Machinery & Tools' },
+        { id: 'expert', label: 'Expert Advice' }
+    ];
+
+    const serviceTypes = ['Tractor Rental', 'Harvester', 'Expert Consultation', 'Equipment Rental', 'Labor Supply'];
+
+    // Handlers
+    const handleNext = async () => {
         if (step === 1) {
-            if (!profile.username || !profile.firstName || !profile.lastName || !profile.gender) {
-                setError("Please fill in all required profile fields.");
-                return false;
+            if (!formData.username.trim() || !formData.firstName.trim() || !formData.lastName.trim() || !formData.gender) {
+                alert("Please fill in all the required fields: Username, First Name, Last Name, and Gender.");
+                return;
+            }
+        } else if (step === 2) {
+            if (!formData.stateCode || !formData.district || !formData.taluka.trim() || !formData.village.trim()) {
+                alert("Please fill in all location details: State, District, Taluka, and Village.");
+                return;
+            }
+        } else if (step === 3) {
+            if (role === 'farmer' && formData.crops.length === 0) {
+                alert("Please select at least one crop.");
+                return;
+            } else if (role === 'provider') {
+                if (formData.services.length === 0) {
+                    alert("Please select at least one service.");
+                    return;
+                }
+                if (formData.services.includes('Others') && !formData.serviceDesc.trim()) {
+                    alert("Please describe your 'Other' service.");
+                    return;
+                }
+            }
+        } else if (step === 4) {
+            if (formData.interests.length === 0) {
+                alert("Please select at least one interest.");
+                return;
+            }
+        } else if (step === 5) {
+            if (formData.communities.length < 3) {
+                alert(`Please select at least 3 communities to join. You have selected ${formData.communities.length}.`);
+                return;
             }
         }
-        if (step === 2) {
-            if (!location.state || !location.district || !location.taluka || !location.village) {
-                setError("Please fill in all location details.");
-                return false;
-            }
-        }
-        if (step === 3) {
-            if (!roleDetails.trim()) {
-                setError(`Please list your ${userRole === 'farmer' ? 'crops' : 'services'}.`);
-                return false;
-            }
-        }
+
         if (step === 5) {
-            if (communities.length < 3) {
-                setError("Please select at least 3 communities to join.");
-                return false;
+            setIsSubmitting(true);
+            try {
+                const customUserId = formData.username?.trim() || user?.id || 'guest';
+                localStorage.setItem('customUserId', customUserId);
+
+                const basePayload = {
+                    userId: customUserId,
+                    firstName: formData.firstName?.trim() || '',
+                    lastName: formData.lastName?.trim() || '',
+                    email: (formData.email || user?.primaryEmailAddress?.emailAddress || '').trim(),
+                    gender: formData.gender || "Not Specified",
+                    state: formData.state,
+                    district: formData.district,
+                    village: formData.village?.trim() || '',
+                    interestedList: formData.interests,
+                    joinedCommunities: formData.communities
+                };
+
+                if (role === 'farmer') {
+                    await api.createFarmer({
+                        ...basePayload,
+                        cropList: formData.crops
+                    });
+                } else {
+                    const finalServices = formData.services.map(s =>
+                        s === 'Others' ? `Others: ${formData.serviceDesc}` : s
+                    );
+                    await api.createServiceProvider({
+                        ...basePayload,
+                        serviceList: finalServices.length > 0 ? finalServices : [formData.serviceDesc]
+                    });
+                }
+
+                // Add member to selected communities sequentially so the backend is updated with memberships
+                for (const communityId of formData.communities) {
+                    try {
+                        await api.addMemberToCommunity(communityId, role, customUserId);
+                    } catch (e) {
+                        console.error(`Failed to join community ${communityId}`, e);
+                    }
+                }
+                toast.success(`Successfully joined ${formData.communities.length} communities! Welcome!`);
+
+                navigate('/feed');
+            } catch (error) {
+                console.error('Error during onboarding API call:', error);
+                // Optionally show error to user, but continue to feed right now to not block flow
+                navigate('/feed');
+            } finally {
+                setIsSubmitting(false);
             }
-        }
-        return true;
-    };
-
-    const handleNext = () => {
-        if (validateStep()) {
-            setStep(prev => Math.min(prev + 1, 5));
-        }
-    };
-
-    const handleBack = () => {
-        setStep(prev => Math.max(prev - 1, 1));
-        setError('');
-    };
-
-    const toggleInterest = (interest) => {
-        if (interests.includes(interest)) {
-            setInterests(interests.filter(i => i !== interest));
         } else {
-            setInterests([...interests, interest]);
+            setStep(prev => prev + 1);
         }
     };
+    const handleBack = () => setStep(prev => prev - 1);
 
-    const toggleCommunity = (id) => {
-        if (communities.includes(id)) {
-            setCommunities(communities.filter(c => c !== id));
-        } else {
-            setCommunities([...communities, id]);
-        }
+    const handleCropToggle = (cropValue) => {
+        setFormData(prev => ({
+            ...prev,
+            crops: prev.crops.includes(cropValue)
+                ? prev.crops.filter(c => c !== cropValue)
+                : [...prev.crops, cropValue]
+        }));
     };
 
-    const handleSubmit = async () => {
-        if (!validateStep()) return;
-
-        setIsSubmitting(true);
-        // Mock API call simulation
-        setTimeout(() => {
-            setIsSubmitting(false);
-            // Show toast visually (could use Sonner or similar in real app)
-            alert("Account setup complete! Welcome to AgroW.");
-            navigate('/feed');
-        }, 1500);
+    const handleServiceToggle = (serviceValue) => {
+        setFormData(prev => ({
+            ...prev,
+            services: prev.services.includes(serviceValue)
+                ? prev.services.filter(s => s !== serviceValue)
+                : [...prev.services, serviceValue]
+        }));
     };
 
-    // Calculate Progress (1 to 5)
-    const progressPercent = (step / 5) * 100;
+    const handleInterestToggle = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            interests: prev.interests.includes(id)
+                ? prev.interests.filter(i => i !== id)
+                : [...prev.interests, id]
+        }));
+    };
 
-    return (
-        <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    const handleCommunityToggle = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            communities: prev.communities.includes(id)
+                ? prev.communities.filter(c => c !== id)
+                : [...prev.communities, id]
+        }));
+    };
 
-            {/* Left Panel - Illustration & Branding */}
-            <div className="hidden md:flex md:w-1/3 lg:w-2/5 bg-gradient-to-br from-green-600 to-green-800 text-white p-12 flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
-                <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-16">
-                        <div className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center">
-                            <span className="text-green-600 font-bold text-2xl">A</span>
-                        </div>
-                        <span className="text-3xl font-extrabold tracking-tight">AgroW</span>
+    const handleStateChange = (e) => {
+        const stateCode = e.target.value;
+        const stateName = e.target.options[e.target.selectedIndex].text;
+
+        setFormData(prev => ({
+            ...prev,
+            stateCode: stateCode,
+            state: stateName,
+            district: '' // Reset district when state changes
+        }));
+    };
+
+
+    // Render Steps
+    const renderProgressBar = () => (
+        <div className={styles.progressContainer}>
+            <div className={styles.progressSteps}>
+                {[1, 2, 3, 4, 5].map(num => (
+                    <div key={num} className={`${styles.stepIndicator} ${step >= num ? `${styles.activeStep} ${role === 'provider' ? styles.provider : ''}` : ''}`}>
+                        {step > num ? <Check size={16} /> : num}
                     </div>
-
-                    <h1 className="text-4xl lg:text-5xl font-extrabold mb-6 leading-tight">
-                        Grow your network, <br />
-                        <span className="text-green-300">grow your farm.</span>
-                    </h1>
-                    <p className="text-green-50 text-lg max-w-sm">
-                        Complete your profile to connect with thousands of local farmers and experts in your region.
-                    </p>
+                ))}
+                <div className={styles.progressBarBg}>
+                    <div
+                        className={styles.progressBarFill}
+                        style={{ width: `${((step - 1) / 4) * 100}%`, backgroundColor: role === 'provider' ? '#ff8300' : '#2E7D32' }}
+                    ></div>
                 </div>
+            </div>
+            <p className={styles.stepLabel}>Step {step} of 5</p>
+        </div>
+    );
 
-                <div className="relative z-10 mt-12 bg-white/10 p-6 rounded-2xl backdrop-blur-sm border border-white/20">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="flex -space-x-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-400 border-2 border-green-700"></div>
-                            <div className="w-8 h-8 rounded-full bg-orange-400 border-2 border-green-700"></div>
-                            <div className="w-8 h-8 rounded-full bg-yellow-400 border-2 border-green-700"></div>
-                        </div>
-                        <span className="text-sm font-semibold">Join 50k+ Members</span>
-                    </div>
+    const renderStep1_Profile = () => (
+        <div className={styles.stepContent}>
+            <h2 className={role === 'provider' ? styles.provider : ''}>Basic Details</h2>
+            <p className={styles.helperText}>Let's start with some basic information.</p>
+
+            <div className={styles.formGroup}>
+                <label>Username</label>
+                <input
+                    type="text"
+                    placeholder="Choose a username (e.g. ram_patil_99)"
+                    value={formData.username}
+                    onChange={(e) => handleChange('username', e.target.value)}
+                    className={styles.textInput}
+                />
+            </div>
+
+            <div className={styles.row}>
+                <div className={styles.formGroup}>
+                    <label>First Name</label>
+                    <input
+                        type="text"
+                        placeholder="Enter first name"
+                        value={formData.firstName}
+                        onChange={(e) => handleChange('firstName', e.target.value)}
+                        className={styles.textInput}
+                    />
+                </div>
+                <div className={styles.formGroup}>
+                    <label>Last Name</label>
+                    <input
+                        type="text"
+                        placeholder="Enter last name"
+                        value={formData.lastName}
+                        onChange={(e) => handleChange('lastName', e.target.value)}
+                        className={styles.textInput}
+                    />
                 </div>
             </div>
 
-            {/* Right Panel - Wizard content */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="max-w-xl mx-auto px-6 py-12 lg:px-12 w-full min-h-full flex flex-col">
+            <div className={styles.row}>
+                <div className={styles.formGroup}>
+                    <label>Email Address</label>
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            type="email"
+                            placeholder="your@email.com"
+                            value={formData.email}
+                            readOnly
+                            className={styles.textInput}
+                            style={{ backgroundColor: 'var(--color-bg)', opacity: 0.85, cursor: 'not-allowed', paddingRight: '2.5rem' }}
+                        />
+                        <Lock size={16} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+                    </div>
+                </div>
+                <div className={styles.formGroup}>
+                    <label>Gender</label>
+                    <div className={styles.selectWrapper}>
+                        <select value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)} className={styles.textInput} style={{ appearance: 'none', paddingRight: '2.5rem' }}>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <ChevronDown className={styles.selectIcon} size={20} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
-                    {/* Progress Bar */}
-                    <div className="w-full mb-8">
-                        <div className="flex justify-between text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">
-                            <span>Step {step} of 5</span>
-                            <span>{Math.round(progressPercent)}% completed</span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out"
-                                style={{ width: `${progressPercent}%` }}
-                            ></div>
-                        </div>
+    const renderStep2_Location = () => (
+        <div className={styles.stepContent}>
+            <h2 className={role === 'provider' ? styles.provider : ''}>Where are you located?</h2>
+            <p className={styles.helperText}>This helps us connect you with nearby {role === 'farmer' ? 'farmers and services' : 'customers'}.</p>
+
+            <div className={styles.formGroup}>
+                <label>State</label>
+                <div className={styles.selectWrapper}>
+                    <select
+                        value={formData.stateCode}
+                        onChange={handleStateChange}
+                        className={styles.textInput}
+                        style={{ appearance: 'none', paddingRight: '2.5rem' }}
+                        required
+                    >
+                        <option value="" disabled>Select State</option>
+                        {getAllStates().map(state => (
+                            <option key={state.code} value={state.code}>{state.name}</option>
+                        ))}
+                    </select>
+                    <ChevronDown className={styles.selectIcon} size={20} />
+                </div>
+            </div>
+
+            <div className={styles.row}>
+                <div className={styles.formGroup}>
+                    <label>District</label>
+                    <div className={styles.selectWrapper}>
+                        <select
+                            value={formData.district}
+                            onChange={(e) => handleChange('district', e.target.value)}
+                            className={styles.textInput}
+                            style={{ appearance: 'none', paddingRight: '2.5rem' }}
+                            disabled={!formData.stateCode}
+                            required
+                        >
+                            <option value="" disabled>{formData.stateCode ? "Select District" : "Select State First"}</option>
+                            {formData.stateCode && getDistricts(formData.stateCode).map(district => (
+                                <option key={district} value={district}>{district}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className={styles.selectIcon} size={20} />
+                    </div>
+                </div>
+                <div className={styles.formGroup}>
+                    <label>Taluka</label>
+                    <input
+                        type="text"
+                        placeholder="Enter Taluka"
+                        value={formData.taluka}
+                        onChange={(e) => handleChange('taluka', e.target.value)}
+                        className={styles.textInput}
+                    />
+                </div>
+            </div>
+
+            <div className={styles.formGroup}>
+                <label>Village</label>
+                <input
+                    type="text"
+                    placeholder="Enter Village Name"
+                    value={formData.village}
+                    onChange={(e) => handleChange('village', e.target.value)}
+                    className={styles.textInput}
+                />
+            </div>
+        </div>
+    );
+
+    const renderStep3_Farmer = () => {
+        const cropsList = [
+            // Cereals & Grains
+            'Wheat', 'Rice (Paddy)', 'Maize (Corn)', 'Jowar (Sorghum)', 'Bajra (Pearl Millet)', 'Ragi (Finger Millet)', 'Barley', 'Oats',
+            // Pulses
+            'Gram (Chana)', 'Toor (Arhar)', 'Moong', 'Urad', 'Masoor (Lentil)', 'Peas', 'Cowpea',
+            // Oilseeds
+            'Soybean', 'Groundnut', 'Mustard / Rapeseed', 'Sunflower', 'Sesame (Til)', 'Castor', 'Linseed',
+            // Cash Crops & Commercial
+            'Sugarcane', 'Cotton', 'Jute', 'Tobacco', 'Guar',
+            // Plantation & Spices
+            'Tea', 'Coffee', 'Rubber', 'Coconut', 'Arecanut', 'Cashew', 'Cardamom', 'Pepper', 'Turmeric', 'Ginger', 'Chilli', 'Coriander', 'Cumin', 'Fennel', 'Garlic',
+            // Fruits & Vegetables
+            'Mango', 'Banana', 'Grapes', 'Apple', 'Pomegranate', 'Papaya', 'Guava', 'Citrus / Orange', 'Pineapple', 'Onion', 'Tomato', 'Potato', 'Cauliflower', 'Cabbage', 'Brinjal', 'Okra (Bhindi)'
+        ];
+
+        return (
+            <div className={styles.stepContent}>
+                <h2 className={role === 'provider' ? styles.provider : ''}>Tell us about your farm</h2>
+                <p className={styles.helperText}>Select the primary crops you grow or plan to grow.</p>
+
+                <div className={styles.formGroup}>
+                    <div className={styles.checkboxGrid} style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                        gap: '12px',
+                        marginTop: '16px',
+                        maxHeight: '350px',
+                        overflowY: 'auto',
+                        padding: '4px',
+                        paddingRight: '12px'
+                    }}>
+                        {cropsList.map(crop => (
+                            <label key={crop} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                fontSize: '0.95rem',
+                                color: '#333'
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    checked={formData.crops.includes(crop.toLowerCase())}
+                                    onChange={() => handleCropToggle(crop.toLowerCase())}
+                                    style={{ width: '18px', height: '18px', accentColor: '#2E7D32', flexShrink: 0 }}
+                                />
+                                {crop}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderStep3_Provider = () => {
+        const servicesList = [
+            'Tractor Rental', 'Harvester Rental', 'Drone Spraying', 'Labor Supply',
+            'Plant Pathology', 'Agriculture Expert Consultation', 'Soil Testing',
+            'Seed Supply', 'Fertilizer Supply', 'Pesticide Supply', 'Cold Storage',
+            'Transportation Delivery', 'Thresher Machine', 'Water Pump Rental', 'Others'
+        ];
+
+        return (
+            <div className={styles.stepContent}>
+                <h2 className={role === 'provider' ? styles.provider : ''}>What service do you offer?</h2>
+                <p className={styles.helperText}>Select the primary services you can provide to farmers.</p>
+
+                <div className={styles.formGroup}>
+                    <div className={styles.checkboxGrid} style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                        gap: '12px',
+                        marginTop: '16px',
+                        maxHeight: '250px',
+                        overflowY: 'auto',
+                        padding: '4px',
+                        paddingRight: '12px'
+                    }}>
+                        {servicesList.map(service => (
+                            <label key={service} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                fontSize: '0.95rem',
+                                color: '#333'
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    checked={formData.services.includes(service)}
+                                    onChange={() => handleServiceToggle(service)}
+                                    style={{ width: '18px', height: '18px', accentColor: '#ff8300', flexShrink: 0 }}
+                                />
+                                {service}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {formData.services.includes('Others') && (
+                    <div className={styles.formGroup}>
+                        <label>Specify Other Services</label>
+                        <textarea
+                            placeholder="Describe your equipment, any unlisted services, rates, or expertise..."
+                            value={formData.serviceDesc}
+                            onChange={(e) => handleChange('serviceDesc', e.target.value)}
+                            className={styles.textArea}
+                            rows={3}
+                        />
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderStep4_Interests = () => (
+        <div className={styles.stepContent}>
+            <h2 className={role === 'provider' ? styles.provider : ''}>What are you interested in?</h2>
+            <p className={styles.helperText}>Select topics to personalize your feed.</p>
+
+            <div className={styles.interestsGrid}>
+                {interestsList.map(item => (
+                    <button
+                        key={item.id}
+                        className={`${styles.interestCard} ${formData.interests.includes(item.id) ? (role === 'provider' ? styles.selectedInterestProvider : styles.selectedInterest) : ''}`}
+                        onClick={() => handleInterestToggle(item.id)}
+                        style={formData.interests.includes(item.id) && role === 'provider' ? { backgroundColor: '#ff8300', borderColor: '#ff8300', color: 'white' } : {}}
+                    >
+                        {formData.interests.includes(item.id) && <CheckCircle size={18} className={styles.checkIcon} />}
+                        {item.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
+
+
+    const renderStep5_Communities = () => (
+        <div className={styles.stepContent}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                    <h2 className={role === 'provider' ? styles.provider : ''} style={{ margin: 0 }}>Join Communities</h2>
+                    <p className={styles.helperText} style={{ margin: '4px 0 0 0' }}>Please select at least 3 communities to join to complete your setup.</p>
+                </div>
+                <button
+                    onClick={fetchAllComms}
+                    disabled={isLoadingCommunities}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '8px 16px', borderRadius: '8px',
+                        border: '1px solid #ccc', background: 'white',
+                        cursor: isLoadingCommunities ? 'not-allowed' : 'pointer',
+                        fontSize: '0.9rem', fontWeight: '500', color: '#333',
+                        transition: 'background 0.2s'
+                    }}
+                >
+                    <RefreshCw size={16} style={{ animation: isLoadingCommunities ? 'spin 1s linear infinite' : 'none' }} />
+                    Refresh
+                </button>
+            </div>
+            <div className={styles.interestsGrid} style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '8px', marginTop: '16px' }}>
+                {isLoadingCommunities ? (
+                    <p>Loading communities...</p>
+                ) : availableCommunities.length === 0 ? (
+                    <p>No communities found. (You may proceed directly).</p>
+                ) : (
+                    availableCommunities.map(community => {
+                        const commId = community.communityId || community._id;
+                        const isSelected = formData.communities.includes(commId);
+                        return (
+                            <button
+                                key={commId}
+                                className={`${styles.interestCard} ${isSelected ? (role === 'provider' ? styles.selectedInterestProvider : styles.selectedInterest) : ''}`}
+                                onClick={() => handleCommunityToggle(commId)}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '1rem', minHeight: '80px', justifyContent: 'center',
+                                    ...(isSelected && role === 'provider' ? { backgroundColor: '#ff8300', borderColor: '#ff8300', color: 'white' } : {})
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                    {isSelected && <CheckCircle size={18} className={styles.checkIcon} style={{ marginRight: '8px', flexShrink: 0 }} />}
+                                    <span style={{ fontWeight: '600', textAlign: 'left', wordBreak: 'break-word', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                        {community.communityName}
+                                    </span>
+                                </div>
+                                <span style={{ fontSize: '0.8rem', color: isSelected ? 'rgba(255,255,255,0.8)' : '#666', marginTop: '4px' }}>
+                                    {community.memberCount || 0} Members
+                                </span>
+                            </button>
+                        );
+                    })
+                )}
+            </div>
+        </div>
+    );
+
+
+
+    return (
+        <div className={styles.container}>
+            {/* Illustration Side (Laptop only) */}
+            <div className={`${styles.sidePanel} ${role === 'provider' ? styles.provider : ''}`}>
+                <div className={`${styles.illustration} ${role === 'provider' ? styles.provider : ''}`}>
+                    {role === 'farmer' ? <Sprout size={120} /> : <Tractor size={120} />}
+                </div>
+                <h2 className={styles.sideTitle}>
+                    {role === 'farmer' ? 'Grow Better, Together.' : 'Expand Your Reach.'}
+                </h2>
+                <p className={styles.sideText}>
+                    {role === 'farmer'
+                        ? "Join thousands of farmers sharing knowledge and resources."
+                        : "Connect directly with farmers who need your services."}
+                </p>
+
+
+            </div>
+
+            {/* Form Area */}
+            <div className={styles.mainArea}>
+                <div className={styles.wizardWidth}>
+                    {renderProgressBar()}
+
+                    <div className={styles.stepContainer}>
+                        {step === 1 && renderStep1_Profile()}
+                        {step === 2 && renderStep2_Location()}
+                        {step === 3 && (role === 'farmer' ? renderStep3_Farmer() : renderStep3_Provider())}
+                        {step === 4 && renderStep4_Interests()}
+                        {step === 5 && renderStep5_Communities()}
                     </div>
 
-                    {/* Error Box */}
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100 flex items-start gap-2">
-                            <span className="mt-0.5">⚠️</span> {error}
-                        </div>
-                    )}
-
-                    {/* Step Content */}
-                    <div className="flex-grow">
-
-                        {/* STEP 1: Basic Profile */}
-                        {step === 1 && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-1">Basic Profile</h2>
-                                    <p className="text-slate-500 text-sm">Tell us a bit about yourself.</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Email <span className="text-slate-400">(from login)</span></label>
-                                        <input
-                                            type="email"
-                                            value={mockEmail}
-                                            disabled
-                                            className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed form-input"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Username *</label>
-                                        <input
-                                            type="text"
-                                            value={profile.username}
-                                            onChange={e => setProfile({ ...profile, username: e.target.value })}
-                                            placeholder="e.g. kisan_ramesh"
-                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
-                                            <input
-                                                type="text"
-                                                value={profile.firstName}
-                                                onChange={e => setProfile({ ...profile, firstName: e.target.value })}
-                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
-                                            <input
-                                                type="text"
-                                                value={profile.lastName}
-                                                onChange={e => setProfile({ ...profile, lastName: e.target.value })}
-                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Gender *</label>
-                                        <select
-                                            value={profile.gender}
-                                            onChange={e => setProfile({ ...profile, gender: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all appearance-none"
-                                        >
-                                            <option value="">Select Gender</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                            <option value="Prefer not to say">Prefer not to say</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* STEP 2: Location */}
-                        {step === 2 && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-1">Your Location</h2>
-                                    <p className="text-slate-500 text-sm">Where is your farm or business located?</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">State *</label>
-                                        <select
-                                            value={location.state}
-                                            onChange={e => setLocation({ ...location, state: e.target.value, district: '' })}
-                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all appearance-none"
-                                        >
-                                            <option value="">Select State</option>
-                                            {IndianStates.map(st => <option key={st} value={st}>{st}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">District *</label>
-                                        <select
-                                            value={location.district}
-                                            onChange={e => setLocation({ ...location, district: e.target.value })}
-                                            disabled={!location.state}
-                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all appearance-none disabled:bg-slate-50 disabled:text-slate-400"
-                                        >
-                                            <option value="">Select District</option>
-                                            {availableDistricts.map(dist => <option key={dist} value={dist}>{dist}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Taluka / Tehsil *</label>
-                                        <input
-                                            type="text"
-                                            value={location.taluka}
-                                            onChange={e => setLocation({ ...location, taluka: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Village *</label>
-                                        <input
-                                            type="text"
-                                            value={location.village}
-                                            onChange={e => setLocation({ ...location, village: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* STEP 3: Role Details */}
-                        {step === 3 && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-1">
-                                        {userRole === 'farmer' ? "Farm Details" : "Service Details"}
-                                    </h2>
-                                    <p className="text-slate-500 text-sm">
-                                        {userRole === 'farmer'
-                                            ? "What crops are you currently growing?"
-                                            : "What tractor or services do you offer?"}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        {userRole === 'farmer' ? "Crops Grown (comma-separated) *" : "Services Provided (comma-separated) *"}
-                                    </label>
-                                    <textarea
-                                        rows="4"
-                                        value={roleDetails}
-                                        onChange={e => setRoleDetails(e.target.value)}
-                                        placeholder={userRole === 'farmer' ? "e.g. Wheat, Soyabean, Cotton, Tomatoes" : "e.g. Tractor 40HP, Rotavator, Spraying Machine, Labor"}
-                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none"
-                                    ></textarea>
-                                </div>
-
-                                <div className="bg-green-50 p-4 border border-green-100 rounded-xl flex items-start gap-3">
-                                    <Leaf className="text-green-600 mt-0.5 flex-shrink-0" size={18} />
-                                    <p className="text-sm text-green-800">
-                                        This helps us match you with relevant communities and experts who specialize in your specific fields.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* STEP 4: Interests */}
-                        {step === 4 && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-1">Your Interests</h2>
-                                    <p className="text-slate-500 text-sm">Select topics you want to learn more about.</p>
-                                </div>
-
-                                <div className="flex flex-wrap gap-3">
-                                    {INTERESTS_LIST.map(interest => {
-                                        const isSelected = interests.includes(interest);
-                                        return (
-                                            <button
-                                                key={interest}
-                                                onClick={() => toggleInterest(interest)}
-                                                className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 border ${isSelected
-                                                    ? 'bg-green-100 text-green-800 border-green-300 shadow-inner'
-                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-green-300 hover:bg-slate-50'
-                                                    }`}
-                                            >
-                                                {interest} {isSelected && '✓'}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* STEP 5: Communities */}
-                        {step === 5 && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-1">Join Communities</h2>
-                                    <p className="text-slate-500 text-sm">Select at least 3 local groups to get started.</p>
-                                    <p className="text-xs text-slate-400 mt-1 font-bold">SELECTED: {communities.length}/3 MINIMUM</p>
-                                </div>
-
-                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 pb-4">
-                                    {MOCK_COMMUNITIES.map(comm => {
-                                        const isSelected = communities.includes(comm.id);
-                                        return (
-                                            <div
-                                                key={comm.id}
-                                                onClick={() => toggleCommunity(comm.id)}
-                                                className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex justify-between items-center ${isSelected
-                                                    ? 'border-green-500 bg-green-50'
-                                                    : 'border-slate-100 bg-white hover:border-green-200 hover:shadow-sm'
-                                                    }`}
-                                            >
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800">{comm.name}</h4>
-                                                    <p className="text-xs text-slate-500 mt-1">{comm.members.toLocaleString()} members</p>
-                                                </div>
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isSelected ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-300'
-                                                    }`}>
-                                                    <Check size={14} strokeWidth={3} />
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                    </div>
-
-                    {/* Navigation Buttons */}
-                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
+                    <div className={styles.actions}>
                         {step > 1 ? (
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 text-slate-500 font-medium hover:text-slate-800 transition-colors px-4 py-2"
-                            >
-                                <ArrowLeft size={18} /> Back
+                            <button onClick={handleBack} className={styles.backBtn}>
+                                Back
                             </button>
                         ) : (
-                            <div></div> // Spacer
+                            <div className={styles.spacer}></div>
                         )}
 
-                        {step < 5 ? (
-                            <button
-                                onClick={handleNext}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl px-6 py-3 transition-colors shadow-sm"
-                            >
-                                Continue <ChevronRight size={18} />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className={`flex items-center gap-2 text-white font-semibold rounded-xl px-8 py-3 transition-all shadow-md ${isSubmitting ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5'
-                                    }`}
-                            >
-                                {isSubmitting ? 'Finishing...' : 'Complete Setup'}
-                                {!isSubmitting && <Check size={18} />}
-                            </button>
-                        )}
+                        <button onClick={handleNext} className={`${styles.nextBtn} ${role === 'provider' ? styles.provider : ''}`} disabled={isSubmitting}>
+                            {step === 5
+                                ? (isSubmitting ? 'Submitting...' : 'Complete & Go to Feed')
+                                : 'Continue'
+                            }
+                            {step < 5 && <ArrowRight size={18} />}
+                        </button>
                     </div>
+
 
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { landingData } from '../../data/landingData';
 import { BookOpen, Sprout, Tractor, CheckCircle2, ThumbsUp, MessageSquare, Star, ShieldCheck, Clock } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,6 +7,12 @@ import { useLanguage } from '../../contexts/LanguageContext';
 const HeroSection = () => {
     const { t } = useLanguage();
     const { hero } = landingData;
+    const navigate = useNavigate();
+
+    const handleRoleSelect = (role) => {
+        localStorage.setItem('userRole', role);
+        navigate('/auth?mode=sign-up');
+    };
 
     return (
         <section className="pt-6 pb-8 overflow-hidden relative" style={{ background: 'linear-gradient(to bottom, #ecfdf5, #ffffff 40%, #fff7ed 75%, rgba(239,91,0,0.08) 100%)' }}>
@@ -53,7 +59,7 @@ const HeroSection = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
 
                             {/* Farmer Card */}
-                            <Link to="/auth?role=farmer" className="group flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
+                            <div onClick={() => handleRoleSelect('farmer')} className="group flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer">
                                 {/* Top Color Bar */}
                                 <div className="h-2 w-full bg-gradient-to-r from-[#2E7D32] to-[#43A047]"></div>
 
@@ -85,10 +91,10 @@ const HeroSection = () => {
                                         Continue as Farmer
                                     </button>
                                 </div>
-                            </Link>
+                            </div>
 
                             {/* Provider Card */}
-                            <Link to="/auth?role=provider" className="group flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
+                            <div onClick={() => handleRoleSelect('provider')} className="group flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer">
                                 {/* Top Color Bar */}
                                 <div className="h-2 w-full bg-gradient-to-r from-[#E65100] to-[#FF6D00]"></div>
 
@@ -120,7 +126,7 @@ const HeroSection = () => {
                                         Continue as Service Provider
                                     </button>
                                 </div>
-                            </Link>
+                            </div>
                         </div>
                     </div>
 

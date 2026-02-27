@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Menu, Search, Plus, Sun, Moon, Languages, Leaf,
-    Bell, ChevronDown, User, Settings, LogOut, CheckCircle
+    Bell, ChevronDown, User, Settings, LogOut
 } from 'lucide-react';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -17,12 +17,10 @@ const TopBar = ({ toggleSidebar }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-    // Internationalization Hooks
-    const { language, setLanguage, t } = useLanguage();
+    const { language, setLanguage } = useLanguage();
 
     const profileRef = useRef(null);
 
-    // Click outside to close profile menu
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -33,12 +31,10 @@ const TopBar = ({ toggleSidebar }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Debounced mock search
     useEffect(() => {
         const delaySearch = setTimeout(() => {
             if (searchTerm.trim().length > 1) {
                 setIsSearching(true);
-                // Mock search hit api.searchCommunities()
                 setTimeout(() => {
                     const mockResults = [
                         { id: 'c1', name: 'Maharashtra Cotton', tags: ['Crop', 'State'] },
@@ -63,15 +59,10 @@ const TopBar = ({ toggleSidebar }) => {
         }
     };
 
-    // Bridge our custom language select to Google Translate's native combo box
     const handleLanguageChange = (e) => {
         const newLang = e.target.value;
         const newLangCode = e.target.options[e.target.selectedIndex].getAttribute('data-code');
-
-        // Update our React Context (handles static translations)
         setLanguage(newLangCode);
-
-        // Find and trigger the Google Translate native select
         const googleSelect = document.querySelector('.goog-te-combo');
         if (googleSelect) {
             googleSelect.value = newLangCode;
@@ -81,32 +72,32 @@ const TopBar = ({ toggleSidebar }) => {
 
     return (
         <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-50 px-4 flex items-center justify-between shadow-sm">
-            {/* Left: Logo & Menu */}
-            <div className="flex items-center gap-3 w-1/4">
+            {/* Left: Hamburger + Logo */}
+            <div className="flex items-center gap-2 shrink-0">
                 <button
                     onClick={toggleSidebar}
-                    className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors xl:hidden"
+                    className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors lg:hidden"
                 >
-                    <Menu size={24} />
+                    <Menu size={22} />
                 </button>
-                <Link to="/feed" className="items-center gap-2 hidden sm:flex">
+                <Link to="/feed" className="flex items-center gap-2">
                     <Leaf className="text-green-700" size={24} strokeWidth={2.5} />
-                    <span className="text-2xl font-black text-slate-900 tracking-tight hidden xs:block">AgroW</span>
+                    <span className="text-xl font-black text-slate-900 tracking-tight hidden sm:block">AgroW</span>
                 </Link>
             </div>
 
             {/* Center: Search Bar */}
-            <div className="flex-1 max-w-[600px] px-2 relative">
+            <div className="flex-1 max-w-[520px] mx-4 relative">
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-slate-400 group-focus-within:text-green-500 transition-colors" />
+                        <Search className="h-4 w-4 text-slate-400 group-focus-within:text-green-500 transition-colors" />
                     </div>
                     <input
                         type="text"
                         placeholder="Search AgroW..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-full leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm transition-all"
+                        className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-full leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all"
                     />
                 </div>
 
@@ -140,33 +131,35 @@ const TopBar = ({ toggleSidebar }) => {
                 )}
             </div>
 
-            {/* Right: Actions */}
-            <div className="flex items-center justify-end gap-1 sm:gap-3 w-1/4">
+            {/* Right: Actions - well aligned */}
+            <div className="flex items-center gap-2 shrink-0">
 
+                {/* Create Post Button */}
                 <button
                     onClick={() => navigate('/submit')}
-                    className="hidden xl:flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm transition-colors"
+                    className="hidden md:flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full font-bold text-sm shadow-sm transition-colors"
                 >
-                    <Plus size={18} />
-                    <span>Create Post</span>
+                    <Plus size={16} />
+                    <span className="hidden lg:inline">Create Post</span>
                 </button>
 
+                {/* Dark Mode Toggle - desktop only */}
                 <button
                     onClick={() => setIsDark(!isDark)}
-                    className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors hidden sm:block"
+                    className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors hidden md:flex items-center justify-center"
                 >
-                    {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                    {isDark ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
-                {/* Language Selector Pill */}
-                <div className="hidden md:flex items-center bg-slate-100 rounded-full px-1 py-1 hover:bg-slate-200 transition-colors max-w-[120px]">
+                {/* Language Selector - desktop only */}
+                <div className="hidden lg:flex items-center bg-slate-100 rounded-full px-1.5 py-1 hover:bg-slate-200 transition-colors">
                     <div className="p-1 rounded-full bg-white shadow-sm text-green-600 mr-1">
-                        <Languages size={14} />
+                        <Languages size={12} />
                     </div>
                     <select
                         value={language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : language}
                         onChange={handleLanguageChange}
-                        className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 truncate w-20"
+                        className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-3 truncate w-16"
                     >
                         <option value="English" data-code="en">English</option>
                         <option value="हिन्दी" data-code="hi">हिन्दी</option>
@@ -183,17 +176,20 @@ const TopBar = ({ toggleSidebar }) => {
                     </select>
                 </div>
 
-                {/* Notification Bell (Hidden on very small mobile) */}
-                <button className="hidden xs:block p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative">
-                    <Bell size={20} />
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                {/* Notification Bell */}
+                <button
+                    onClick={() => navigate('/notifications')}
+                    className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative"
+                >
+                    <Bell size={18} />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
 
                 {/* Profile Dropdown */}
-                <div className="relative hidden sm:block" ref={profileRef}>
+                <div className="relative" ref={profileRef}>
                     <button
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors ml-2"
+                        className="flex items-center gap-1.5 p-1 pl-1 pr-2 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                         {user?.imageUrl ? (
                             <img src={user.imageUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover" />
@@ -202,10 +198,10 @@ const TopBar = ({ toggleSidebar }) => {
                                 {user?.firstName?.charAt(0) || 'U'}
                             </div>
                         )}
-                        <span className="text-sm font-bold text-slate-700 hidden lg:block">
+                        <span className="text-sm font-bold text-slate-700 hidden lg:block max-w-[80px] truncate">
                             {user?.firstName || 'User'}
                         </span>
-                        <ChevronDown size={16} className="text-slate-400 hidden lg:block" />
+                        <ChevronDown size={14} className="text-slate-400 hidden lg:block" />
                     </button>
 
                     {showProfileMenu && (
@@ -219,15 +215,6 @@ const TopBar = ({ toggleSidebar }) => {
                                 <Link to="/profile" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-green-700 transition-colors">
                                     <User size={16} /> View Profile
                                 </Link>
-                                <button className="w-full flex items-center justify-between px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors lg:hidden">
-                                    <div className="flex items-center gap-3">
-                                        {isDark ? <Sun size={16} /> : <Moon size={16} />}
-                                        {isDark ? 'Light Mode' : 'Dark Mode'}
-                                    </div>
-                                    <div className={`w-8 h-4 rounded-full transition-colors flex items-center px-0.5 ${isDark ? 'bg-green-500 justify-end' : 'bg-slate-200 justify-start'}`}>
-                                        <div className="w-3 h-3 bg-white rounded-full shadow-sm"></div>
-                                    </div>
-                                </button>
                                 <Link to="/settings" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-green-700 transition-colors">
                                     <Settings size={16} /> Settings
                                 </Link>
