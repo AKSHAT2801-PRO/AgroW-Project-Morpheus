@@ -5,6 +5,7 @@ import {
     Bell, ChevronDown, User, Settings, LogOut, CheckCircle
 } from 'lucide-react';
 import { useUser, useClerk } from '@clerk/clerk-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const TopBar = ({ toggleSidebar }) => {
     const navigate = useNavigate();
@@ -15,7 +16,9 @@ const TopBar = ({ toggleSidebar }) => {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [language, setLanguage] = useState('English');
+
+    // Internationalization Hooks
+    const { language, setLanguage, t } = useLanguage();
 
     const profileRef = useRef(null);
 
@@ -57,6 +60,22 @@ const TopBar = ({ toggleSidebar }) => {
         if (window.confirm("Are you sure you want to log out?")) {
             await signOut();
             navigate('/auth?mode=sign-in');
+        }
+    };
+
+    // Bridge our custom language select to Google Translate's native combo box
+    const handleLanguageChange = (e) => {
+        const newLang = e.target.value;
+        const newLangCode = e.target.options[e.target.selectedIndex].getAttribute('data-code');
+
+        // Update our React Context (handles static translations)
+        setLanguage(newLangCode);
+
+        // Find and trigger the Google Translate native select
+        const googleSelect = document.querySelector('.goog-te-combo');
+        if (googleSelect) {
+            googleSelect.value = newLangCode;
+            googleSelect.dispatchEvent(new Event('change'));
         }
     };
 
@@ -144,13 +163,22 @@ const TopBar = ({ toggleSidebar }) => {
                         <Languages size={14} />
                     </div>
                     <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 trancate w-20"
+                        value={language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : language}
+                        onChange={handleLanguageChange}
+                        className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 truncate w-20"
                     >
-                        {['English', 'हिन्दी', 'मराठी', 'বাংলা', 'தமிழ்', 'తెలుగు', 'ગુજરાતી', 'ಕನ್ನಡ', 'മലയാളം', 'ਪੰਜਾਬੀ', 'ଓଡ଼ିଆ', 'اردو'].map(l => (
-                            <option key={l} value={l}>{l}</option>
-                        ))}
+                        <option value="English" data-code="en">English</option>
+                        <option value="हिन्दी" data-code="hi">हिन्दी</option>
+                        <option value="मराठी" data-code="mr">मराठी</option>
+                        <option value="বাংলা" data-code="bn">বাংলা</option>
+                        <option value="தமிழ்" data-code="ta">தமிழ்</option>
+                        <option value="తెలుగు" data-code="te">తెలుగు</option>
+                        <option value="ગુજરાતી" data-code="gu">ગુજરાતી</option>
+                        <option value="ಕನ್ನಡ" data-code="kn">ಕನ್ನಡ</option>
+                        <option value="മലയാളം" data-code="ml">മലയാളം</option>
+                        <option value="ਪੰਜਾਬੀ" data-code="pa">ਪੰਜਾਬੀ</option>
+                        <option value="اردو" data-code="ur">اردو</option>
+                        <option value="ଓଡ଼ିଆ" data-code="or">ଓଡ଼ିଆ</option>
                     </select>
                 </div>
 

@@ -83,6 +83,26 @@
     /* Firefox */
 }
 
+/* =========================================
+   Google Translate Overrides
+   Hides the native banner and prevents body shifting
+   ========================================= */
+body {
+    top: 0 !important;
+}
+
+iframe.goog-te-banner-frame {
+    display: none !important;
+}
+
+#google_translate_element {
+    display: none !important;
+}
+
+.skiptranslate {
+    display: none !important;
+}
+
 body {
     font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
     background-color: var(--bg-primary);
