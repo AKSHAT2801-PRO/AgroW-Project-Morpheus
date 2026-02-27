@@ -11,6 +11,9 @@ import CreateCommunityPage from './pages/CreateCommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import ServicePage from './pages/ServicePage';
+import GovernmentSchemesPage from './pages/GovernmentSchemesPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Dummy publishable key for UI development
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_ZHVtbXlrZXk=";
@@ -36,6 +39,11 @@ function App() {
                         <Route path="/submit" element={<CreatePostPage />} />
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/settings" element={<SettingsPage />} />
+
+                        {/* Explore & Info Pages */}
+                        <Route path="/services" element={<ServicePage />} />
+                        <Route path="/schemes" element={<GovernmentSchemesPage />} />
+                        <Route path="/notifications" element={<NotificationsPage />} />
                     </Route>
                 </Routes>
             </Router>

@@ -1,0 +1,57 @@
+[
+    {
+        "id": "gs1",
+        "name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+        "category": "Subsidies",
+        "level": "Central",
+        "coreBenefit": "₹6,000 per year income support",
+        "targetDemographic": "Small & Marginal Farmers",
+        "eligibility": "All landholding farmers' families in the country, subject to certain exclusion criteria related to higher income status.",
+        "procedure": "Eligible farmers can apply online through the PM-KISAN portal or via local Common Service Centers (CSCs) by providing Aadhar and bank account details.",
+        "impact": "Direct income support helps in procuring agricultural inputs and managing domestic needs."
+    },
+    {
+        "id": "gs2",
+        "name": "Mahatma Gandhi National Rural Employment Guarantee Act (MGNREGA)",
+        "category": "Labor Support",
+        "level": "Central",
+        "coreBenefit": "100 days of guaranteed wage employment",
+        "targetDemographic": "Rural Households",
+        "eligibility": "Adult members of any rural household willing to do public work-related unskilled manual work.",
+        "procedure": "Register at the local Gram Panchayat to obtain a Job Card. Employment is provided within 15 days of application.",
+        "impact": "Enhances livelihood security in rural areas and creates durable agricultural assets like ponds and wells."
+    },
+    {
+        "id": "gs3",
+        "name": "Magel Tyala Shettale (Farm Pond Scheme)",
+        "category": "Infrastructure",
+        "level": "State",
+        "coreBenefit": "Subsidy up to ₹50,000 for farm pond construction",
+        "targetDemographic": "Farmers in Maharashtra",
+        "eligibility": "Farmer must own at least 0.60 hectares of land and should not have availed any other farm pond subsidy previously.",
+        "procedure": "Apply through the Aaple Sarkar DBT portal. Requires land records (7/12 & 8A) and Aadhar linkage.",
+        "impact": "Improves water availability for protective irrigation, increasing yield during dry spells."
+    },
+    {
+        "id": "gs4",
+        "name": "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+        "category": "Insurance",
+        "level": "Central",
+        "coreBenefit": "Comprehensive crop insurance cover",
+        "targetDemographic": "All Farmers",
+        "eligibility": "All farmers growing notified crops in a notified area, including sharecroppers and tenant farmers.",
+        "procedure": "Enroll via nearest bank branch, CSC, or online crop insurance portal before the designated cutoff date for Kharif/Rabi seasons.",
+        "impact": "Provides financial support in the event of failure of crops due to natural calamities, pests & diseases."
+    },
+    {
+        "id": "gs5",
+        "name": "Dr. Babasaheb Ambedkar Krushi Swavalamban Yojana",
+        "category": "Irrigation",
+        "level": "State",
+        "coreBenefit": "Financial assistance for new wells and pumpsets",
+        "targetDemographic": "SC/ST Farmers in Maharashtra",
+        "eligibility": "SC/ST farmers with an annual income below ₹1.5 Lakhs and landholding between 0.20 to 6 Hectares.",
+        "procedure": "Submit applications online on the MahaDBT portal with caste certificate and land holding documents.",
+        "impact": "Enhances irrigation facilities specifically for marginalized communities, promoting self-reliance."
+    }
+]
