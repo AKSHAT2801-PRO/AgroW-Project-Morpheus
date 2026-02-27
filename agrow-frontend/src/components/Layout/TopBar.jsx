@@ -2,20 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Menu, Search, Plus, Sun, Moon, Languages, Leaf,
-    Bell, ChevronDown, User, Settings, LogOut
+    Bell, ChevronDown, User, Settings, LogOut, SearchX
 } from 'lucide-react';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TopBar = ({ toggleSidebar }) => {
     const navigate = useNavigate();
     const { user } = useUser();
     const { signOut } = useClerk();
-    const [isDark, setIsDark] = useState(false);
+    const { isDark, toggleTheme } = useTheme();
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(3);
 
     const { language, setLanguage } = useLanguage();
 
@@ -76,13 +78,13 @@ const TopBar = ({ toggleSidebar }) => {
             <div className="flex items-center gap-2 shrink-0">
                 <button
                     onClick={toggleSidebar}
-                    className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors lg:hidden"
+                    className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
                 >
                     <Menu size={22} />
                 </button>
-                <Link to="/feed" className="flex items-center gap-2">
+                <Link to="/feed" className="hidden md:flex items-center gap-2">
                     <Leaf className="text-green-700" size={24} strokeWidth={2.5} />
-                    <span className="text-xl font-black text-slate-900 tracking-tight hidden sm:block">AgroW</span>
+                    <span className="text-xl font-black text-green-700 tracking-tight notranslate" translate="no">AgroW</span>
                 </Link>
             </div>
 
@@ -125,7 +127,11 @@ const TopBar = ({ toggleSidebar }) => {
                                 ))}
                             </ul>
                         ) : (
-                            <div className="p-4 text-center text-sm text-slate-500">No communities found.</div>
+                            <div className="px-4 py-8 flex flex-col items-center text-center gap-2">
+                                <SearchX size={32} className="text-slate-300" />
+                                <p className="font-bold text-slate-600 text-sm">No results for &ldquo;{searchTerm}&rdquo;</p>
+                                <p className="text-xs text-slate-400">Try checking the spelling or searching for a different community.</p>
+                            </div>
                         )}
                     </div>
                 )}
@@ -145,8 +151,9 @@ const TopBar = ({ toggleSidebar }) => {
 
                 {/* Dark Mode Toggle - desktop only */}
                 <button
-                    onClick={() => setIsDark(!isDark)}
+                    onClick={toggleTheme}
                     className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors hidden md:flex items-center justify-center"
+                    title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
                     {isDark ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
@@ -176,20 +183,25 @@ const TopBar = ({ toggleSidebar }) => {
                     </select>
                 </div>
 
+
                 {/* Notification Bell */}
                 <button
-                    onClick={() => navigate('/notifications')}
+                    onClick={() => { navigate('/notifications'); setUnreadCount(0); }}
                     className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative"
                 >
                     <Bell size={18} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-white leading-none">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
                 </button>
 
                 {/* Profile Dropdown */}
-                <div className="relative" ref={profileRef}>
+                <div className="relative hidden md:block" ref={profileRef}>
                     <button
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-1.5 p-1 pl-1 pr-2 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-1.5 p-1 pl-1 pr-2 rounded-full border border-green-600 hover:bg-green-50 transition-colors"
                     >
                         {user?.imageUrl ? (
                             <img src={user.imageUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover" />

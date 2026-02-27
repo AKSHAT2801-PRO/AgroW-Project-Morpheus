@@ -1,28 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import {
     MapPin, Share2, Grid, MessageSquare,
-    Bookmark, Clock, ArrowUpCircle, ArrowDownCircle,
-    UserCircle, Settings, Camera, Shield
+    Bookmark, ThumbsUp, ThumbsDown,
+    UserCircle, Settings, Camera, Shield,
+    ChevronLeft, ChevronRight, FileText, Heart
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import usePageTitle from '../hooks/usePageTitle';
 
 const ProfilePage = () => {
+    usePageTitle('Profile');
     const { user } = useUser();
     const [activeTab, setActiveTab] = useState('Overview');
 
     const MOCK_USER_ROLE = localStorage.getItem('userRole') || 'farmer';
     const isFarmer = MOCK_USER_ROLE === 'farmer';
 
+    const tabsRef = useRef(null);
+
     const TABS = [
         { id: 'Overview', icon: Grid },
         { id: 'Posts', icon: Grid },
         { id: 'Comments', icon: MessageSquare },
         { id: 'Saved', icon: Bookmark },
-        { id: 'History', icon: Clock },
-        { id: 'Upvoted', icon: ArrowUpCircle },
-        { id: 'Downvoted', icon: ArrowDownCircle },
+        { id: 'Liked', icon: ThumbsUp },
+        { id: 'Disliked', icon: ThumbsDown },
     ];
+
+    const scrollTabs = (direction) => {
+        if (tabsRef.current) {
+            tabsRef.current.scrollBy({ left: direction * 150, behavior: 'smooth' });
+        }
+    };
 
     const getInitials = () => {
         return user?.firstName ? user.firstName.charAt(0) : 'U';
@@ -59,8 +69,8 @@ const ProfilePage = () => {
                             Solapur, Maharashtra
                         </span>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${isFarmer
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-orange-100 text-orange-700'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-orange-100 text-orange-700'
                             }`}>
                             {isFarmer ? 'Farmer' : 'Service Provider'}
                         </span>
@@ -74,9 +84,12 @@ const ProfilePage = () => {
                 {/* Main Content Area */}
                 <div className="flex-grow min-w-0">
 
-                    {/* Tabs */}
-                    <div className="bg-white rounded-t-2xl border-x border-t border-slate-100 px-2 sm:px-4 overflow-x-auto hide-scrollbar sticky top-16 z-30">
-                        <div className="flex gap-2 min-w-max pb-0 pt-2">
+                    {/* Tabs with < > navigation */}
+                    <div className="bg-white rounded-t-2xl border-x border-t border-slate-100 px-2 sm:px-4 sticky top-16 z-30 flex items-center">
+                        <button onClick={() => scrollTabs(-1)} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors shrink-0 flex">
+                            <ChevronLeft size={18} />
+                        </button>
+                        <div ref={tabsRef} className="flex gap-2 min-w-0 overflow-x-auto hide-scrollbar pb-0 pt-2 flex-1">
                             {TABS.map(tab => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
@@ -84,9 +97,9 @@ const ProfilePage = () => {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`flex items-center gap-2 px-4 py-3 font-bold text-sm transition-all border-b-2 ${isActive
-                                                ? 'border-green-600 text-green-700'
-                                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-lg'
+                                        className={`flex items-center gap-2 px-4 py-3 font-bold text-sm transition-all border-b-2 whitespace-nowrap ${isActive
+                                            ? 'border-green-600 text-green-700'
+                                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-lg'
                                             }`}
                                     >
                                         <Icon size={16} className={isActive ? 'text-green-600' : 'text-slate-400'} />
@@ -95,38 +108,67 @@ const ProfilePage = () => {
                                 );
                             })}
                         </div>
+                        <button onClick={() => scrollTabs(1)} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors shrink-0 flex">
+                            <ChevronRight size={18} />
+                        </button>
                     </div>
 
-                    {/* Filter Bar (inside tab) */}
-                    <div className="bg-slate-50 border-x border-t border-slate-100 px-6 py-3 flex justify-between items-center">
-                        <select className="bg-transparent text-slate-500 font-bold text-xs uppercase tracking-wider focus:outline-none cursor-pointer">
-                            <option>Newest</option>
-                            <option>Top</option>
-                            <option>Oldest</option>
-                        </select>
-                        <Link to="/submit" className="text-green-600 hover:text-green-700 font-bold text-sm bg-white px-3 py-1.5 rounded-full border border-green-200 shadow-sm transition-colors">
-                            + Create Post
-                        </Link>
-                    </div>
 
-                    {/* Tab Content (Empty State Placeholder) */}
-                    <div className="bg-white rounded-b-2xl border border-slate-100 p-12 flex flex-col items-center justify-center text-center">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4 shadow-inner">
-                            <UserCircle size={32} />
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2">You don't have any {activeTab.toLowerCase()} yet</h3>
-                        <p className="text-slate-500 text-sm max-w-sm mb-6">When you share {activeTab.toLowerCase()} in your communities, they will show up here.</p>
 
-                        {activeTab === 'Comments' || activeTab === 'Posts' ? (
-                            <Link to="/communities" className="bg-green-600 text-white font-bold py-2 px-6 rounded-full hover:bg-green-700 transition-colors shadow-sm">
-                                Explore Communities
-                            </Link>
-                        ) : (
-                            <Link to="/settings" className="bg-white text-slate-700 font-bold border-2 border-slate-200 hover:border-slate-300 py-2 px-6 rounded-full hover:bg-slate-50 transition-colors">
-                                Update Settings
-                            </Link>
-                        )}
-                    </div>
+                    {/* Tab Content — per-tab empty states */}
+                    {(() => {
+                        const emptyStates = {
+                            Overview: {
+                                icon: <Grid size={32} />,
+                                title: 'Your overview is empty',
+                                desc: 'Start posting and engaging in communities to build your overview.',
+                                cta: { label: 'Explore Communities', to: '/communities' }
+                            },
+                            Posts: {
+                                icon: <FileText size={32} />,
+                                title: 'No posts yet',
+                                desc: 'Share your farming experiences, doubts, or tips with your communities.',
+                                cta: { label: 'Create a Post', to: '/submit' }
+                            },
+                            Comments: {
+                                icon: <MessageSquare size={32} />,
+                                title: 'No comments yet',
+                                desc: 'Join the conversation — comment on posts in your communities.',
+                                cta: { label: 'Browse Feed', to: '/feed' }
+                            },
+                            Saved: {
+                                icon: <Bookmark size={32} />,
+                                title: 'No saved posts yet',
+                                desc: 'Tap the bookmark on any post to save it for later reference.',
+                                cta: { label: 'Browse Feed', to: '/feed' }
+                            },
+                            Liked: {
+                                icon: <ThumbsUp size={32} />,
+                                title: 'No liked posts yet',
+                                desc: 'Posts you like will appear here for quick access.',
+                                cta: { label: 'Browse Feed', to: '/feed' }
+                            },
+                            Disliked: {
+                                icon: <ThumbsDown size={32} />,
+                                title: 'No disliked posts',
+                                desc: 'Posts you dislike will be tracked here.',
+                                cta: { label: 'Browse Feed', to: '/feed' }
+                            },
+                        };
+                        const state = emptyStates[activeTab] || emptyStates.Overview;
+                        return (
+                            <div className="bg-white rounded-b-2xl border border-slate-100 p-12 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4 shadow-inner">
+                                    {state.icon}
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">{state.title}</h3>
+                                <p className="text-slate-500 text-sm max-w-sm mb-6">{state.desc}</p>
+                                <Link to={state.cta.to} className="bg-green-600 text-white font-bold py-2 px-6 rounded-full hover:bg-green-700 transition-colors shadow-sm text-sm">
+                                    {state.cta.label}
+                                </Link>
+                            </div>
+                        );
+                    })()}
 
                 </div>
 

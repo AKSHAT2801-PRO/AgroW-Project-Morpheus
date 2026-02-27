@@ -13,16 +13,21 @@ const BottomNav = () => {
         return (
             <Link
                 to={to}
-                className="flex-1 flex flex-col items-center justify-center gap-0.5 relative h-full"
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 relative h-full group"
             >
-                {isActive && (
-                    <div className="absolute top-0 w-10 h-[3px] bg-green-500 rounded-b-full"></div>
-                )}
+                {/* Active bar — animates in via scaleX */}
+                <span
+                    className={`
+                        absolute top-0 h-[3px] rounded-b-full bg-green-500
+                        transition-all duration-300 ease-out
+                        ${isActive ? 'w-10 opacity-100 scale-x-100' : 'w-0 opacity-0 scale-x-0'}
+                    `}
+                />
                 <Icon
                     size={22}
-                    className={`transition-colors duration-200 ${isActive ? 'text-green-600' : 'text-slate-400'}`}
+                    className={`transition-all duration-200 ${isActive ? 'text-green-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}
                 />
-                <span className={`text-[10px] font-medium ${isActive ? 'text-green-700' : 'text-slate-500'}`}>
+                <span className={`text-[10px] font-medium transition-colors ${isActive ? 'text-green-700' : 'text-slate-500 group-hover:text-slate-600'}`}>
                     {label}
                 </span>
             </Link>
@@ -35,15 +40,15 @@ const BottomNav = () => {
             <NavItem to="/feed" icon={Home} label="Home" exact />
             <NavItem to="/services" icon={Briefcase} label="Services" />
 
-            {/* Create - aligned flat with other items */}
+            {/* Create */}
             <Link
                 to="/submit"
-                className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full relative"
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full relative group"
             >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center shadow-md group-hover:shadow-lg group-active:scale-95 transition-all duration-150">
                     <Plus size={22} strokeWidth={2.5} />
                 </div>
-                <span className="text-[10px] font-medium text-slate-500">Create</span>
+                <span className="text-[10px] font-medium text-slate-500 group-hover:text-slate-600">Create</span>
             </Link>
 
             <NavItem to="/communities" icon={Compass} label="Explore" />

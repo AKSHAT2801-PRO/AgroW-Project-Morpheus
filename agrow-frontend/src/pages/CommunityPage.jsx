@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    MoreHorizontal, Trash2,
+    MoreHorizontal, Trash2, Bookmark, EyeOff, Flag,
     ThumbsUp, ThumbsDown, MessageSquare, Share2, X, Leaf, Send, Copy,
     Plus, Shield, Users, ScrollText, Info
 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
+import ImageCarousel from '../components/ImageCarousel';
+import PostTag from '../components/PostTag';
+import { formatRelativeTime } from '../utils/timeUtils';
 
 const MOCK_COMMUNITY = {
     id: 'c1',
@@ -34,11 +37,11 @@ const MOCK_POSTS = [
         id: 'p1',
         author: { name: 'Ramesh Shinde', username: 'ramesh_s', credibility: 78 },
         community: { id: 'c1', name: 'Maharashtra Cotton Growers' },
-        date: '2 hours ago',
+        date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         title: 'Best fertilizer schedule for late-sown Bt Cotton?',
         tags: ['Doubt'],
         body: 'I had to sow my Bt Cotton crop slightly late this year due to delayed rains. Should I adjust the standard NPK application schedule? Any recommendations for foliar sprays?',
-        image: null,
+        images: [],
         likes: 12,
         dislikes: 1,
         isLikedByUser: false,
@@ -50,11 +53,11 @@ const MOCK_POSTS = [
         id: 'p2',
         author: { name: 'Kisan Admin', username: 'admin', credibility: 95 },
         community: { id: 'c1', name: 'Maharashtra Cotton Growers' },
-        date: '1 day ago',
+        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         title: 'Identifying Pink Bollworm Infestation Early',
         tags: ['Knowledge'],
         body: 'Early detection of Pink Bollworm is essential to prevent huge yield losses. Look for Rosette flowers (flowers that fail to open fully and appear clumped).',
-        image: 'https://images.unsplash.com/photo-1596489391152-16782255d6b4?w=800&q=80',
+        images: ['https://images.unsplash.com/photo-1596489391152-16782255d6b4?w=800&q=80'],
         likes: 89,
         dislikes: 2,
         isLikedByUser: true,
@@ -85,6 +88,19 @@ const CommunityPage = () => {
     const [shareModal, setShareModal] = useState({ isOpen: false, post: null });
     const [isZoomed, setIsZoomed] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
+    const [openOverflow, setOpenOverflow] = useState(null);
+    const overflowRef = useRef(null);
+
+    // Close overflow on click outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (overflowRef.current && !overflowRef.current.contains(e.target)) {
+                setOpenOverflow(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     useEffect(() => {
         setIsLoading(true);
@@ -286,127 +302,143 @@ const CommunityPage = () => {
             <div className="flex gap-5 mt-5">
                 {/* Feed column */}
                 <div className="flex-1 min-w-0 space-y-4">
-                    {posts.map(post => (
-                        <div key={post.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                            {/* Header */}
-                            <div className="p-4 pb-2 flex justify-between items-start">
-                                <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 cursor-pointer">
-                                        {getInitials(post.author.name)}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h4 className="font-bold text-slate-900 text-sm hover:underline cursor-pointer">{post.author.name}</h4>
-                                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded border ${getCredibilityColor(post.author.credibility)}`}>
-                                                <Shield size={10} />
-                                                {post.author.credibility}/100
-                                            </span>
+                    {posts.map(post => {
+                        const { relative: relDate, absolute: absDate } = formatRelativeTime(post.date);
+                        return (
+                            <div key={post.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                                {/* Header */}
+                                <div className="p-4 pb-2 flex justify-between items-start">
+                                    <div className="flex gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 cursor-pointer">
+                                            {getInitials(post.author.name)}
                                         </div>
-                                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                                            <span>{post.date}</span>
-                                        </p>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h4 className="font-bold text-slate-900 text-sm hover:underline cursor-pointer notranslate" translate="no">{post.author.name}</h4>
+                                                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded border ${getCredibilityColor(post.author.credibility)}`}>
+                                                    <Shield size={10} />
+                                                    {post.author.credibility}/100
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                                                <time
+                                                    dateTime={post.date}
+                                                    title={absDate}
+                                                    className="hover:underline cursor-default"
+                                                >
+                                                    {relDate}
+                                                </time>
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center text-slate-400">
-                                    {post.isOwn && (
-                                        <button onClick={() => deletePost(post.id)} className="p-2 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors mr-1">
-                                            <Trash2 size={18} />
+                                    <div className="relative" ref={openOverflow === post.id ? overflowRef : null}>
+                                        <button
+                                            onClick={() => setOpenOverflow(openOverflow === post.id ? null : post.id)}
+                                            className="p-2 hover:bg-slate-50 hover:text-slate-700 rounded-full transition-colors text-slate-400"
+                                        >
+                                            <MoreHorizontal size={20} />
                                         </button>
-                                    )}
-                                    <button className="p-2 hover:bg-slate-50 hover:text-slate-700 rounded-full transition-colors">
-                                        <MoreHorizontal size={20} />
-                                    </button>
-                                </div>
-                            </div>
+                                        {openOverflow === post.id && (
+                                            <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in slide-in-from-top-2">
+                                                <button onClick={() => { showToast('Post saved!'); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium">
+                                                    <Bookmark size={16} className="text-slate-400" /> Save Post
+                                                </button>
+                                                <button onClick={() => { setPosts(posts.filter(p => p.id !== post.id)); setOpenOverflow(null); showToast('Post hidden'); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium">
+                                                    <EyeOff size={16} className="text-slate-400" /> Hide Post
+                                                </button>
 
-                            {/* Body */}
-                            <div className="p-4 pt-2">
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {post.tags.map(tag => (
-                                        <span key={tag} className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${getTagStyles(tag)}`}>
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">{post.title}</h3>
-                                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">{post.body}</p>
-                            </div>
-
-                            {/* Image */}
-                            {post.image && (
-                                <div className="px-4 pb-4">
-                                    <img
-                                        src={post.image} alt="Post content"
-                                        className="w-full rounded-xl max-h-[400px] object-cover cursor-pointer border border-slate-100"
-                                        onClick={() => setImageModal({ isOpen: true, url: post.image })}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Actions — Separate Like & Dislike */}
-                            <div className="px-3 py-1.5 mx-3 border-t border-slate-100 flex justify-between items-center text-slate-500">
-                                <div className="flex items-center gap-0.5">
-                                    <button onClick={() => handleLike(post.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-semibold text-sm ${post.isLikedByUser ? 'text-green-700 bg-green-50' : 'hover:bg-slate-50'}`}>
-                                        <ThumbsUp size={18} className={post.isLikedByUser ? 'fill-current' : ''} />
-                                        <span>{post.likes}</span>
-                                    </button>
-                                    <button onClick={() => handleDislike(post.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-semibold text-sm ${post.isDislikedByUser ? 'text-red-600 bg-red-50' : 'hover:bg-slate-50'}`}>
-                                        <ThumbsDown size={18} className={post.isDislikedByUser ? 'fill-current' : ''} />
-                                        <span>{post.dislikes}</span>
-                                    </button>
-                                    <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-lg transition-colors font-semibold text-sm">
-                                        <MessageSquare size={18} />
-                                        <span>{post.comments.length}</span>
-                                    </button>
-                                </div>
-                                <button onClick={() => setShareModal({ isOpen: true, post: post })} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-lg transition-colors font-semibold text-sm">
-                                    <Share2 size={18} />
-                                    <span className="hidden sm:inline">Share</span>
-                                </button>
-                            </div>
-
-                            {/* Comments */}
-                            {expandedComments[post.id] && (
-                                <div className="bg-slate-50 px-4 py-4 border-t border-slate-100 space-y-4">
-                                    <div className="flex gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold flex items-center justify-center flex-shrink-0 text-xs mt-1">
-                                            {getInitials(user?.firstName || 'C')}
-                                        </div>
-                                        <div className="flex-grow flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500 transition-all">
-                                            <input type="text" placeholder="Write a comment..." className="w-full px-3 py-2 outline-none text-sm text-slate-800" />
-                                            <button className="px-3 text-green-600 hover:bg-green-50 transition-colors font-bold text-sm">Post</button>
-                                        </div>
+                                                {post.isOwn && (
+                                                    <>
+                                                        <div className="border-t border-slate-100 my-1"></div>
+                                                        <button onClick={() => { deletePost(post.id); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                                                            <Trash2 size={16} /> Delete Post
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                    {[...post.comments].reverse().map(comment => (
-                                        <div key={comment.id} className="flex gap-2 group">
-                                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 text-xs">
-                                                {getInitials(comment.author)}
+                                </div>
+
+                                {/* Body */}
+                                <div className="p-4 pt-2">
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                        {post.tags.map(tag => (
+                                            <PostTag key={tag} tag={tag} />
+                                        ))}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-2">{post.title}</h3>
+                                    <p className="text-slate-800 text-base leading-relaxed whitespace-pre-wrap font-semibold">{post.body}</p>
+                                </div>
+
+                                {/* Images — carousel */}
+                                <ImageCarousel images={post.images || (post.image ? [post.image] : [])} />
+
+                                {/* Actions — Separate Like & Dislike */}
+                                <div className="px-3 py-1.5 mx-3 border-t border-slate-100 flex justify-between items-center text-slate-500">
+                                    <div className="flex items-center gap-0.5">
+                                        <button onClick={() => handleLike(post.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-150 font-semibold text-sm active:scale-90 ${post.isLikedByUser ? 'text-green-700 bg-green-50 scale-105' : 'hover:bg-slate-50 hover:scale-105'}`}>
+                                            <ThumbsUp size={18} className={post.isLikedByUser ? 'fill-current' : ''} />
+                                            <span>{post.likes}</span>
+                                        </button>
+                                        <button onClick={() => handleDislike(post.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-150 font-semibold text-sm active:scale-90 ${post.isDislikedByUser ? 'text-slate-700 bg-slate-100 scale-105' : 'hover:bg-slate-50 hover:scale-105'}`}>
+                                            <ThumbsDown size={18} className={post.isDislikedByUser ? 'fill-current' : ''} />
+                                            <span>{post.dislikes}</span>
+                                        </button>
+                                        <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-lg transition-colors font-semibold text-sm">
+                                            <MessageSquare size={18} />
+                                            <span>{post.comments.length}</span>
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setShareModal({ isOpen: true, post: post })} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-lg transition-colors font-semibold text-sm">
+                                        <Share2 size={18} />
+                                        <span className="hidden sm:inline">Share</span>
+                                    </button>
+                                </div>
+
+                                {/* Comments */}
+                                {expandedComments[post.id] && (
+                                    <div className="bg-slate-50 px-4 py-4 border-t border-slate-100 space-y-4">
+                                        <div className="flex gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold flex items-center justify-center flex-shrink-0 text-xs mt-1">
+                                                {getInitials(user?.firstName || 'C')}
                                             </div>
-                                            <div className="flex-grow">
-                                                <div className="bg-white px-3 py-2 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm inline-block max-w-full">
-                                                    <span className="font-bold text-slate-900 text-sm block mb-0.5">{comment.author}</span>
-                                                    <span className="text-slate-800 text-sm whitespace-pre-wrap">{comment.text}</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 mt-1 ml-1 text-[11px] font-bold text-slate-400">
-                                                    <span>Just now</span>
-                                                    <button onClick={() => handleCommentLike(post.id, comment.id)} className={`flex items-center gap-1 hover:text-green-600 ${comment.isLikedByUser ? 'text-green-600' : ''}`}>
-                                                        <ThumbsUp size={12} className={comment.isLikedByUser ? 'fill-current' : ''} /> {comment.likes}
-                                                    </button>
-                                                    <button onClick={() => handleCommentDislike(post.id, comment.id)} className={`flex items-center gap-1 hover:text-red-500 ${comment.isDislikedByUser ? 'text-red-500' : ''}`}>
-                                                        <ThumbsDown size={12} className={comment.isDislikedByUser ? 'fill-current' : ''} /> {comment.dislikes}
-                                                    </button>
-                                                    <button className="hover:text-slate-700">Reply</button>
-                                                    {comment.isOwn && (
-                                                        <button onClick={() => deleteComment(post.id, comment.id)} className="hover:text-red-500">Delete</button>
-                                                    )}
-                                                </div>
+                                            <div className="flex-grow flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500 transition-all">
+                                                <input type="text" placeholder="Write a comment..." className="w-full px-3 py-2 outline-none text-sm text-slate-800" />
+                                                <button className="px-3 text-green-600 hover:bg-green-50 transition-colors font-bold text-sm">Post</button>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                        {[...post.comments].reverse().map(comment => (
+                                            <div key={comment.id} className="flex gap-2 group">
+                                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                                                    {getInitials(comment.author)}
+                                                </div>
+                                                <div className="flex-grow">
+                                                    <div className="bg-white px-3 py-2 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm inline-block max-w-full">
+                                                        <span className="font-bold text-slate-900 text-sm block mb-0.5 notranslate" translate="no">{comment.author}</span>
+                                                        <span className="text-slate-800 text-sm whitespace-pre-wrap">{comment.text}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-1 ml-1 text-[11px] font-bold text-slate-400">
+                                                        <span>Just now</span>
+                                                        <button onClick={() => handleCommentLike(post.id, comment.id)} className={`flex items-center gap-1 hover:text-green-600 ${comment.isLikedByUser ? 'text-green-600' : ''}`}>
+                                                            <ThumbsUp size={12} className={comment.isLikedByUser ? 'fill-current' : ''} /> {comment.likes}
+                                                        </button>
+                                                        <button onClick={() => handleCommentDislike(post.id, comment.id)} className={`flex items-center gap-1 hover:text-slate-600 ${comment.isDislikedByUser ? 'text-slate-600' : ''}`}>
+                                                            <ThumbsDown size={12} className={comment.isDislikedByUser ? 'fill-current' : ''} /> {comment.dislikes}
+                                                        </button>
+                                                        <button className="hover:text-slate-700">Reply</button>
+                                                        {comment.isOwn && (
+                                                            <button onClick={() => deleteComment(post.id, comment.id)} className="hover:text-red-500">Delete</button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
 
                     {posts.length === 0 && (
                         <div className="text-center p-8 text-slate-600 bg-white rounded-2xl border border-slate-100">No posts in this community yet.</div>
@@ -422,8 +454,8 @@ const CommunityPage = () => {
                             <h3 className="font-bold text-sm text-slate-800">About</h3>
                         </div>
                         <div className="p-4">
-                            <p className="text-sm text-slate-700 leading-relaxed">{community.description}</p>
-                            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                            <p className="text-sm text-slate-800 leading-relaxed font-medium">{community.description}</p>
+                            <div className="mt-3 flex items-center gap-2 text-xs text-slate-600">
                                 <Users size={14} />
                                 <span className="font-bold">{community.membersCount}</span> members
                             </div>
@@ -438,9 +470,9 @@ const CommunityPage = () => {
                         </div>
                         <div className="p-4 space-y-2">
                             {community.rules.map((rule, i) => (
-                                <div key={i} className="flex gap-2 text-sm text-slate-700">
+                                <div key={i} className="flex gap-2 text-sm text-slate-800">
                                     <span className="text-green-600 font-bold shrink-0">{i + 1}.</span>
-                                    <span>{rule}</span>
+                                    <span className="font-medium">{rule}</span>
                                 </div>
                             ))}
                         </div>
@@ -460,8 +492,8 @@ const CommunityPage = () => {
                                             {member.name.charAt(0)}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-medium text-slate-800 truncate">{member.name}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase">{member.role}</p>
+                                            <p className="text-sm font-bold text-slate-800 truncate">{member.name}</p>
+                                            <p className="text-[10px] text-slate-600 font-bold uppercase">{member.role}</p>
                                         </div>
                                     </div>
                                 ))}

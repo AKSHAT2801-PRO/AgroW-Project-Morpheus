@@ -56,75 +56,41 @@ const HeroSection = () => {
                         </p>
 
                         {/* Role Cards — Matching Provided Design */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+                        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl mt-4">
 
                             {/* Farmer Card */}
-                            <div onClick={() => handleRoleSelect('farmer')} className="group flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer">
-                                {/* Top Color Bar */}
-                                <div className="h-2 w-full bg-gradient-to-r from-[#2E7D32] to-[#43A047]"></div>
+                            <div
+                                onClick={() => handleRoleSelect('farmer')}
+                                className="group flex-1 flex flex-col bg-white rounded-[16px] border border-slate-200 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] p-5 cursor-pointer hover:border-green-200 hover:shadow-lg transition-all duration-300"
+                            >
+                                <div className="w-10 h-10 rounded-[10px] bg-[#E8F5E9] text-[#2E7D32] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <Sprout size={20} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-[16px] font-bold text-slate-900 mb-1 tracking-tight">Join as Farmer</h3>
+                                <p className="text-[13px] text-slate-500 mb-4 font-medium leading-relaxed">
+                                    Ask questions, learn, and get services
+                                </p>
 
-                                <div className="flex flex-col items-center text-center p-6 flex-grow">
-                                    <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <Sprout size={28} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-1">Farmer</h3>
-                                    <p className="text-sm text-slate-500 mb-5">
-                                        Join communities, ask experts, and find nearby services for your farm.
-                                    </p>
-
-                                    <ul className="text-left space-y-2 mb-6 w-full text-sm text-slate-600">
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
-                                            <span>Ask questions & get expert answers</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
-                                            <span>Find local tractors & labor</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
-                                            <span>Learn about government schemes</span>
-                                        </li>
-                                    </ul>
-
-                                    <button className="mt-auto w-full py-3 bg-[#2E7D32] hover:bg-[#1B5E20] text-white font-semibold rounded-xl transition-colors shadow-sm">
-                                        Continue as Farmer
-                                    </button>
+                                <div className="mt-auto flex items-center text-[13px] font-bold text-[#2E7D32] group-hover:translate-x-1 transition-transform duration-300 pt-1">
+                                    Continue <span className="ml-1 opacity-80">→</span>
                                 </div>
                             </div>
 
                             {/* Provider Card */}
-                            <div onClick={() => handleRoleSelect('provider')} className="group flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer">
-                                {/* Top Color Bar */}
-                                <div className="h-2 w-full bg-gradient-to-r from-[#E65100] to-[#FF6D00]"></div>
+                            <div
+                                onClick={() => handleRoleSelect('provider')}
+                                className="group flex-1 flex flex-col bg-white rounded-[16px] border border-slate-200 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] p-5 cursor-pointer hover:border-orange-200 hover:shadow-lg transition-all duration-300"
+                            >
+                                <div className="w-10 h-10 rounded-[10px] bg-[#FFF3E0] text-[#E65100] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <Tractor size={20} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-[16px] font-bold text-slate-900 mb-1 tracking-tight">Provide Services</h3>
+                                <p className="text-[13px] text-slate-500 mb-4 font-medium leading-relaxed">
+                                    Offer tractor, tools, or expert help
+                                </p>
 
-                                <div className="flex flex-col items-center text-center p-6 flex-grow">
-                                    <div className="w-14 h-14 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <Tractor size={28} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-1">Service Provider</h3>
-                                    <p className="text-sm text-slate-500 mb-5">
-                                        Offer your machinery, tools, or expert services to local farmers.
-                                    </p>
-
-                                    <ul className="text-left space-y-2 mb-6 w-full text-sm text-slate-600">
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 size={16} className="text-orange-500 mt-0.5 flex-shrink-0" />
-                                            <span>List your tractors and equipment</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 size={16} className="text-orange-500 mt-0.5 flex-shrink-0" />
-                                            <span>Get booking requests directly</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 size={16} className="text-orange-500 mt-0.5 flex-shrink-0" />
-                                            <span>Build your reputation locally</span>
-                                        </li>
-                                    </ul>
-
-                                    <button className="mt-auto w-full py-3 bg-[#E65100] hover:bg-[#BF360C] text-white font-semibold rounded-xl transition-colors shadow-sm">
-                                        Continue as Service Provider
-                                    </button>
+                                <div className="mt-auto flex items-center text-[13px] font-bold text-[#E65100] group-hover:translate-x-1 transition-transform duration-300 pt-1">
+                                    Continue <span className="ml-1 opacity-80">→</span>
                                 </div>
                             </div>
                         </div>

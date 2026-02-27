@@ -1,18 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     Home, Tractor, BookOpen, Compass, Plus,
-    Star, Settings, X, Leaf, PanelLeftClose, PanelLeftOpen,
+    Star, Settings, Leaf,
     Moon, Sun, Languages
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
-const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
+const COLLAPSED_WIDTH = 68;
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 400;
+const DEFAULT_WIDTH = 270;
+
+const Sidebar = ({ isOpen, toggleSidebar, isCollapsed }) => {
     const location = useLocation();
     const [userRole, setUserRole] = useState('farmer');
     const [refreshKey, setRefreshKey] = useState(0);
-    const [isDark, setIsDark] = useState(false);
+    const { isDark, toggleTheme } = useTheme();
     const { language, setLanguage } = useLanguage();
+
+    // Resize state (only when not collapsed)
+    const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
+    const isResizing = useRef(false);
 
     useEffect(() => {
         const role = localStorage.getItem('userRole') || 'farmer';
@@ -25,6 +35,33 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
         };
         window.addEventListener('communityMembershipChanged', handleMembershipChange);
         return () => window.removeEventListener('communityMembershipChanged', handleMembershipChange);
+    }, []);
+
+    // Drag resize handlers
+    const handleMouseDown = useCallback((e) => {
+        e.preventDefault();
+        isResizing.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, []);
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isResizing.current) return;
+            const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+            setSidebarWidth(newWidth);
+        };
+        const handleMouseUp = () => {
+            isResizing.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
     }, []);
 
     const MOCK_COMMUNITIES = [
@@ -43,11 +80,11 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
             <Link
                 to={to}
                 onClick={() => { if (window.innerWidth < 1024) toggleSidebar() }}
-                className={`flex items-center gap-3 px-6 py-3 transition-colors ${activeClass}`}
+                className={`flex items-center gap-3 px-6 py-3 transition-colors ${activeClass} ${isCollapsed ? 'justify-center px-3' : ''}`}
                 title={isCollapsed ? label : undefined}
             >
-                <Icon size={20} className={isActive ? 'text-green-700' : 'text-slate-500'} />
-                {!isCollapsed && <span>{label}</span>}
+                <Icon size={20} className={isActive ? 'text-green-700' : 'text-slate-600'} />
+                {!isCollapsed && <span className="font-semibold text-base">{label}</span>}
             </Link>
         );
     };
@@ -64,6 +101,8 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
         }
     };
 
+    const currentWidth = isCollapsed ? COLLAPSED_WIDTH : sidebarWidth;
+
     return (
         <>
             {/* Mobile Overlay */}
@@ -75,35 +114,15 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
             )}
 
             {/* Sidebar content */}
-            <aside className={`
-                fixed top-0 left-0 h-full bg-white border-r border-slate-200 z-50 flex flex-col transition-all duration-300 ease-in-out
-                ${isCollapsed ? 'w-[68px]' : 'w-[270px]'}
-                ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:static lg:h-[calc(100vh-64px)] lg:sticky lg:top-16'}
-            `}>
+            <aside
+                style={{ width: `${isOpen ? sidebarWidth : currentWidth}px` }}
+                className={`
+                    fixed top-16 left-0 h-[calc(100vh-64px)] bg-white border-r border-slate-200 z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:static lg:h-[calc(100vh-64px)] lg:sticky lg:top-16'}
+                `}
+            >
 
-                {/* Mobile Sidebar Header */}
-                <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100 lg:hidden">
-                    <Link to="/feed" className="flex items-center gap-2" onClick={toggleSidebar}>
-                        <Leaf className="text-green-600" size={24} />
-                        <span className="text-2xl font-black text-slate-800 tracking-tight">AgroW</span>
-                    </Link>
-                    <button onClick={toggleSidebar} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full">
-                        <X size={20} />
-                    </button>
-                </div>
-
-                {/* Desktop Collapse Toggle */}
-                <div className="hidden lg:flex items-center justify-end px-3 py-2 border-b border-slate-100">
-                    <button
-                        onClick={toggleCollapse}
-                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    >
-                        {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto hide-scrollbar py-4 space-y-6">
+                <div className="flex-1 overflow-y-auto hide-scrollbar py-4 pb-20 space-y-6">
 
                     {/* Main Nav */}
                     <div className="space-y-1">
@@ -118,7 +137,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
                         <NavItem to="/schemes" icon={BookOpen} label="Government Schemes" isActive={isCurrentPath('/schemes')} />
                     </div>
 
-                    {/* Communities */}
+                    {/* Communities - expanded */}
                     {!isCollapsed && (
                         <div>
                             <h3 className="px-6 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Communities</h3>
@@ -136,23 +155,24 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
                                         <div className={`w-8 h-8 rounded-full ${comm.color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>
                                             {comm.name.charAt(0)}
                                         </div>
-                                        <span className="truncate text-sm">{comm.name}</span>
+                                        <span className="truncate text-base font-semibold notranslate" translate="no">{comm.name}</span>
                                     </Link>
                                 ))}
                             </div>
                             <div className="space-y-1 px-3">
                                 <Link to="/communities" className="flex items-center gap-3 px-3 py-2 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors font-medium">
                                     <Compass size={20} className="text-slate-400 shrink-0" />
-                                    <span className="text-sm">Explore All</span>
+                                    <span className="text-base font-semibold text-slate-700">Explore All</span>
                                 </Link>
                                 <Link to="/create-community" className="flex items-center gap-3 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors font-bold">
                                     <Plus size={20} className="shrink-0" />
-                                    <span className="text-sm">Create Community</span>
+                                    <span className="text-base font-semibold">Create Community</span>
                                 </Link>
                             </div>
                         </div>
                     )}
 
+                    {/* Communities - collapsed (just avatars) */}
                     {isCollapsed && (
                         <div className="space-y-1 px-2">
                             {MOCK_COMMUNITIES.slice(0, 3).map(comm => (
@@ -183,38 +203,49 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
                     </div>
 
                     {/* Mobile-only: Dark Mode + Translation */}
-                    <div className="lg:hidden px-4 space-y-3 pt-2 border-t border-slate-100">
-                        <button
-                            onClick={() => setIsDark(!isDark)}
-                            className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors font-medium"
-                        >
-                            <div className="flex items-center gap-3">
-                                {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                                {isDark ? 'Light Mode' : 'Dark Mode'}
-                            </div>
-                            <div className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 ${isDark ? 'bg-green-500 justify-end' : 'bg-slate-200 justify-start'}`}>
-                                <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
-                            </div>
-                        </button>
-
-                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg">
-                            <Languages size={16} className="text-green-600 shrink-0" />
-                            <select
-                                value={language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : language}
-                                onChange={handleLanguageChange}
-                                className="bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer flex-1 appearance-none"
+                    {!isCollapsed && (
+                        <div className="lg:hidden px-4 space-y-3 pt-2 border-t border-slate-100">
+                            <button
+                                onClick={() => toggleTheme()}
+                                className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors font-medium"
                             >
-                                <option value="English" data-code="en">English</option>
-                                <option value="हिन्दी" data-code="hi">हिन्दी</option>
-                                <option value="मराठी" data-code="mr">मराठी</option>
-                                <option value="বাংলা" data-code="bn">বাংলা</option>
-                                <option value="தமிழ்" data-code="ta">தமிழ்</option>
-                                <option value="తెలుగు" data-code="te">తెలుగు</option>
-                            </select>
+                                <div className="flex items-center gap-3">
+                                    {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                                    {isDark ? 'Light Mode' : 'Dark Mode'}
+                                </div>
+                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 ${isDark ? 'bg-green-500 justify-end' : 'bg-slate-200 justify-start'}`}>
+                                    <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                                </div>
+                            </button>
+
+                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg">
+                                <Languages size={16} className="text-green-600 shrink-0" />
+                                <select
+                                    value={language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : language}
+                                    onChange={handleLanguageChange}
+                                    className="bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer flex-1 appearance-none"
+                                >
+                                    <option value="English" data-code="en">English</option>
+                                    <option value="हिन्दी" data-code="hi">हिन्दी</option>
+                                    <option value="मराठी" data-code="mr">मराठी</option>
+                                    <option value="বাংলা" data-code="bn">বাংলা</option>
+                                    <option value="தமிழ்" data-code="ta">தமிழ்</option>
+                                    <option value="తెలుగు" data-code="te">తెలుగు</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                 </div>
+
+                {/* Drag handle on right edge - only when expanded on desktop */}
+                {!isCollapsed && (
+                    <div
+                        onMouseDown={handleMouseDown}
+                        className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-green-400 active:bg-green-500 transition-colors z-50 hidden lg:block"
+                        title="Drag to resize"
+                    />
+                )}
 
             </aside>
         </>

@@ -103,8 +103,8 @@ const CommunitiesListPage = () => {
                                 <button
                                     onClick={(e) => handleJoin(e, community.id, community.isJoined)}
                                     className={`w-full py-2.5 rounded-xl font-bold transition-all ${community.isJoined
-                                            ? 'bg-white border-2 border-slate-200 text-slate-600 hover:border-red-200 hover:text-red-600 hover:bg-red-50'
-                                            : 'bg-green-600 border-2 border-green-600 text-white hover:bg-green-700 hover:border-green-700 shadow-sm'
+                                        ? 'bg-white border-2 border-slate-200 text-slate-600 hover:border-red-200 hover:text-red-600 hover:bg-red-50'
+                                        : 'bg-green-600 border-2 border-green-600 text-white hover:bg-green-700 hover:border-green-700 shadow-sm'
                                         }`}
                                 >
                                     {community.isJoined ? 'Joined' : 'Join Community'}

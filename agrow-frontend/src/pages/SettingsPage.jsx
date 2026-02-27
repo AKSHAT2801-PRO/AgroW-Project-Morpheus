@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import {
     User, Monitor, Lock, Eye, Bell,
@@ -18,8 +18,10 @@ const SettingsPage = () => {
     const { signOut } = useClerk();
     const { user } = useUser();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
-    const [activeTab, setActiveTab] = useState('account');
+    const initialTab = searchParams.get('tab') || 'account';
+    const [activeTab, setActiveTab] = useState(TABS.some(t => t.id === initialTab) ? initialTab : 'account');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -55,8 +57,8 @@ const SettingsPage = () => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-colors whitespace-nowrap ${isActive
-                                            ? 'bg-green-50 text-green-700'
-                                            : 'text-slate-600 hover:bg-slate-50'
+                                        ? 'bg-green-50 text-green-700'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                 >
                                     <Icon size={18} className={isActive ? 'text-green-600' : 'text-slate-400'} />

@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     allowedHosts: [
-      "tayna-feirie-xuan.ngrok-free.dev"
+      "tayna-feirie-xuan.ngrok-free.dev",
+      "portfolio-favorites-holder-wrote.trycloudflare.com"
     ]
   }
 })

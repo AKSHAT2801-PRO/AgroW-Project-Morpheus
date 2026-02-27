@@ -1,5 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Settings, Check, MessageSquare, PlusCircle, Smile } from 'lucide-react';
+import usePageTitle from '../hooks/usePageTitle';
 
 const MOCK_NOTIFICATIONS = [
     {
@@ -41,6 +43,8 @@ const MOCK_NOTIFICATIONS = [
 ];
 
 const NotificationsPage = () => {
+    usePageTitle('Notifications');
+    const navigate = useNavigate();
 
     // In a real app, this would use state and map to the mocked objects above.
     const notifications = MOCK_NOTIFICATIONS;
@@ -55,7 +59,11 @@ const NotificationsPage = () => {
                     <button className="text-sm font-bold text-green-600 hover:text-green-700 flex items-center gap-1.5 transition-colors">
                         <Check size={16} /> Mark all as read
                     </button>
-                    <button className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-full transition-colors">
+                    <button
+                        onClick={() => navigate('/settings?tab=notifications')}
+                        className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-full transition-colors"
+                        title="Notification Settings"
+                    >
                         <Settings size={20} />
                     </button>
                 </div>

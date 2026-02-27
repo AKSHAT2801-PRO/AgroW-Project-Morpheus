@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Image as ImageIcon, Search, Tag, Video, X } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
+import { TAG_CONFIG } from '../components/PostTag';
 
 const MOCK_COMMUNITIES = [
     { id: 'c1', name: 'Maharashtra Cotton Growers' },
@@ -17,6 +18,7 @@ const CreatePostPage = () => {
     const [communityId, setCommunityId] = useState(searchParams.get('community') || '');
     const [title, setTitle] = useState('');
     const [tags, setTags] = useState('');
+    const [category, setCategory] = useState('');
     const [body, setBody] = useState('');
     const [mediaFile, setMediaFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,11 +113,44 @@ const CreatePostPage = () => {
                         <Tag size={18} className="text-slate-400 group-focus-within:text-green-500 mr-3 shrink-0" />
                         <input
                             type="text"
-                            placeholder="Add tags (comma-separated)... e.g. Doubt, Crop Advice, Machine Repair"
+                            placeholder="Add tags (comma-separated)... e.g. Crop Advice, Machine Repair"
                             value={tags}
                             onChange={(e) => setTags(e.target.value)}
                             className="w-full text-sm font-medium placeholder-slate-400 text-slate-700 bg-transparent focus:outline-none"
                         />
+                    </div>
+
+                    {/* Category Selector */}
+                    <div className="border-b border-slate-100 px-5 py-3">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Category</p>
+                        <div className="flex flex-wrap gap-2">
+                            {['Information', 'Doubt', 'Story'].map(cat => {
+                                const cfg = TAG_CONFIG[cat] || TAG_CONFIG.default;
+                                const isSelected = category === cat;
+                                return (
+                                    <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => setCategory(category === cat ? '' : cat)}
+                                        className={`
+                                            inline-flex items-center gap-1.5
+                                            px-3 py-1.5 rounded-full text-sm font-bold border
+                                            transition-all duration-150 active:scale-95
+                                            ${isSelected
+                                                ? `${cfg.bg} ${cfg.text} ${cfg.border} shadow-sm scale-105`
+                                                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                            }
+                                        `}
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? cfg.dot : 'bg-slate-300'}`} />
+                                        {cat}
+                                        {isSelected && (
+                                            <span className={`ml-0.5 text-xs font-black ${cfg.text}`}>✓</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* Body Textarea */}
@@ -179,8 +214,8 @@ const CreatePostPage = () => {
                             type="submit"
                             disabled={isPostDisabled}
                             className={`px-8 py-2 rounded-full font-bold text-sm transition-all shadow-sm ${isPostDisabled
-                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                                    : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'
+                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                                : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'
                                 }`}
                         >
                             {isSubmitting ? 'Posting...' : 'Post'}

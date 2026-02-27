@@ -1,24 +1,43 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { landingData } from '../../data/landingData';
 import { Languages, Leaf } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
+const LANGUAGES = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिन्दी' },
+    { code: 'mr', label: 'मराठी' },
+    { code: 'bn', label: 'বাংলা' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'te', label: 'తెలుగు' },
+    { code: 'gu', label: 'ગુજરાતી' },
+    { code: 'kn', label: 'ಕನ್ನಡ' },
+    { code: 'ml', label: 'മലയാളം' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+    { code: 'ur', label: 'اردو' },
+    { code: 'or', label: 'ଓଡ଼ିଆ' },
+];
+
 const Navbar = () => {
     const { language, setLanguage } = useLanguage();
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    const langRef = useRef(null);
 
-    const handleLanguageChange = (e) => {
-        const selectedOption = e.target.options[e.target.selectedIndex];
-        const code = selectedOption.getAttribute('data-code') || e.target.value;
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (langRef.current && !langRef.current.contains(e.target)) setShowLangMenu(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectLanguage = (code) => {
         setLanguage(code);
+        setShowLangMenu(false);
         const googleSelect = document.querySelector('.goog-te-combo');
-        if (googleSelect) {
-            googleSelect.value = code;
-            googleSelect.dispatchEvent(new Event('change'));
-        }
+        if (googleSelect) { googleSelect.value = code; googleSelect.dispatchEvent(new Event('change')); }
     };
-
-    const currentLabel = language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : 'English';
 
     return (
         <nav className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-50">
@@ -27,42 +46,40 @@ const Navbar = () => {
                     {/* Logo */}
                     <Link to="/" className="flex-shrink-0 flex items-center gap-2">
                         <Leaf className="text-green-700" size={28} strokeWidth={2.5} />
-                        <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                        <span className="text-2xl font-extrabold text-slate-900 tracking-tight notranslate" translate="no">
                             {landingData.navbar.siteName}
                         </span>
                     </Link>
 
                     {/* Right side actions */}
                     <div className="flex items-center gap-3">
-                        {/* Language Selector Pill — same style as TopBar feed page */}
-                        <div className="hidden sm:flex items-center bg-slate-100 rounded-full px-1 py-1 hover:bg-slate-200 transition-colors max-w-[120px]">
-                            <div className="p-1 rounded-full bg-white shadow-sm text-green-600 mr-1">
-                                <Languages size={14} />
-                            </div>
-                            <select
-                                value={currentLabel}
-                                onChange={handleLanguageChange}
-                                className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 truncate w-20"
+                        {/* Language Icon Button + Dropdown */}
+                        <div className="relative" ref={langRef}>
+                            <button
+                                onClick={() => setShowLangMenu(!showLangMenu)}
+                                className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-green-600 transition-colors"
+                                title="Change Language"
                             >
-                                <option value="English" data-code="en">English</option>
-                                <option value="हिन्दी" data-code="hi">हिन्दी</option>
-                                <option value="मराठी" data-code="mr">मराठी</option>
-                                <option value="বাংলা" data-code="bn">বাংলা</option>
-                                <option value="தமிழ்" data-code="ta">தமிழ்</option>
-                                <option value="తెలుగు" data-code="te">తెలుగు</option>
-                                <option value="ગુજરાતી" data-code="gu">ગુજરાતી</option>
-                                <option value="ಕನ್ನಡ" data-code="kn">ಕನ್ನಡ</option>
-                                <option value="മലയാളം" data-code="ml">മലയാളം</option>
-                                <option value="ਪੰਜਾਬੀ" data-code="pa">ਪੰਜਾਬੀ</option>
-                                <option value="اردو" data-code="ur">اردو</option>
-                                <option value="ଓଡ଼ିଆ" data-code="or">ଓଡ଼ିଆ</option>
-                            </select>
+                                <Languages size={18} />
+                            </button>
+                            {showLangMenu && (
+                                <div className="absolute right-0 top-11 w-40 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 max-h-64 overflow-y-auto">
+                                    {LANGUAGES.map(lang => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => selectLanguage(lang.code)}
+                                            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${language === lang.code ? 'bg-green-50 text-green-700 font-bold' : 'text-slate-700 hover:bg-slate-50'}`}
+                                        >
+                                            {lang.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Login Button */}
                         <Link
                             to="/auth?mode=sign-in"
-                            className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors shadow-sm"
+                            className="flex items-center gap-2 bg-green-700 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-800 transition-colors shadow-sm"
                         >
                             {landingData.app.logIn}
                         </Link>
@@ -74,3 +91,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

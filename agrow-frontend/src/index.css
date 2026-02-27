@@ -20,9 +20,9 @@
     --color-surface-hover: #F9FAFB;
     --color-border: #E5E7EB;
 
-    --color-text-primary: #111827;
-    --color-text-secondary: #6B7280;
-    --color-text-muted: #9CA3AF;
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #374151;
+    --color-text-muted: #6B7280;
 
     --color-danger: #DC2626;
     --color-success: #16A34A;
@@ -69,8 +69,8 @@ html.dark {
     --color-surface-hover: #374151;
     --color-border: #374151;
     --color-text-primary: #F9FAFB;
-    --color-text-secondary: #9CA3AF;
-    --color-text-muted: #6B7280;
+    --color-text-secondary: #D1D5DB;
+    --color-text-muted: #9CA3AF;
 
     /* Legacy aliases */
     --bg-primary: var(--color-bg);
