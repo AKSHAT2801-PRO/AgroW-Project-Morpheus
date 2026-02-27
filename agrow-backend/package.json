@@ -1,0 +1,22 @@
+{
+  "name": "agrow-backend",
+  "version": "1.0.0",
+  "description": "Agrow Backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AKSHAT2801-PRO/AgroW-Project-Morpheus.git"
+  },
+  "keywords": [
+    "backend"
+  ],
+  "author": "akshat shukla",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AKSHAT2801-PRO/AgroW-Project-Morpheus/issues"
+  },
+  "homepage": "https://github.com/AKSHAT2801-PRO/AgroW-Project-Morpheus#readme"
+}
