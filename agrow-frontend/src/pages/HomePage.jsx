@@ -3,7 +3,6 @@ import Navbar from '../components/landing/Navbar';
 import HeroSection from '../components/landing/HeroSection';
 import FeaturesGrid from '../components/landing/FeaturesGrid';
 import WhyAgroW from '../components/landing/WhyAgroW';
-import Testimonials from '../components/landing/Testimonials';
 import Footer from '../components/landing/Footer';
 
 const HomePage = () => {
@@ -14,7 +13,6 @@ const HomePage = () => {
                 <HeroSection />
                 <FeaturesGrid />
                 <WhyAgroW />
-                <Testimonials />
             </main>
             <Footer />
         </div>

@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { landingData } from '../../data/landingData';
-import { Globe, ChevronDown, Leaf } from 'lucide-react';
+import { Languages, Leaf } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const Navbar = () => {
-    const { language, setLanguage, t } = useLanguage();
+    const { language, setLanguage } = useLanguage();
 
     const handleLanguageChange = (e) => {
-        const code = e.target.value;
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const code = selectedOption.getAttribute('data-code') || e.target.value;
         setLanguage(code);
         const googleSelect = document.querySelector('.goog-te-combo');
         if (googleSelect) {
@@ -17,7 +18,7 @@ const Navbar = () => {
         }
     };
 
-    const langLabel = language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : 'English';
+    const currentLabel = language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : language === 'mr' ? 'मराठी' : 'English';
 
     return (
         <nav className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-50">
@@ -32,20 +33,30 @@ const Navbar = () => {
                     </Link>
 
                     {/* Right side actions */}
-                    <div className="flex items-center gap-4">
-                        {/* Language Selector */}
-                        <div className="hidden sm:flex items-center gap-1.5 text-slate-600 hover:text-slate-800 transition-colors cursor-pointer relative">
-                            <Globe size={18} />
+                    <div className="flex items-center gap-3">
+                        {/* Language Selector Pill — same style as TopBar feed page */}
+                        <div className="hidden sm:flex items-center bg-slate-100 rounded-full px-1 py-1 hover:bg-slate-200 transition-colors max-w-[120px]">
+                            <div className="p-1 rounded-full bg-white shadow-sm text-green-600 mr-1">
+                                <Languages size={14} />
+                            </div>
                             <select
-                                value={langLabel}
+                                value={currentLabel}
                                 onChange={handleLanguageChange}
-                                className="bg-transparent font-medium text-sm outline-none cursor-pointer appearance-none pr-5"
+                                className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 truncate w-20"
                             >
-                                <option value="en">English</option>
-                                <option value="hi">हिन्दी</option>
-                                <option value="mr">मराठी</option>
+                                <option value="English" data-code="en">English</option>
+                                <option value="हिन्दी" data-code="hi">हिन्दी</option>
+                                <option value="मराठी" data-code="mr">मराठी</option>
+                                <option value="বাংলা" data-code="bn">বাংলা</option>
+                                <option value="தமிழ்" data-code="ta">தமிழ்</option>
+                                <option value="తెలుగు" data-code="te">తెలుగు</option>
+                                <option value="ગુજરાતી" data-code="gu">ગુજરાતી</option>
+                                <option value="ಕನ್ನಡ" data-code="kn">ಕನ್ನಡ</option>
+                                <option value="മലയാളം" data-code="ml">മലയാളം</option>
+                                <option value="ਪੰਜਾਬੀ" data-code="pa">ਪੰਜਾਬੀ</option>
+                                <option value="اردو" data-code="ur">اردو</option>
+                                <option value="ଓଡ଼ିଆ" data-code="or">ଓଡ଼ିଆ</option>
                             </select>
-                            <ChevronDown size={14} className="absolute right-0 pointer-events-none" />
                         </div>
 
                         {/* Login Button */}
