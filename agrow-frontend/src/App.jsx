@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage';
 import ServicePage from './pages/ServicePage';
 import GovernmentSchemesPage from './pages/GovernmentSchemesPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ProviderDashboard from './pages/ProviderDashboard';
 
 // Dummy publishable key for UI development
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_ZHVtbXlrZXk=";
@@ -44,6 +45,7 @@ function App() {
                         <Route path="/services" element={<ServicePage />} />
                         <Route path="/schemes" element={<GovernmentSchemesPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
+                        <Route path="/provider-dashboard" element={<ProviderDashboard />} />
                     </Route>
                 </Routes>
             </Router>
