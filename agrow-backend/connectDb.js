@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-function connectDb(url){
+async function connectDb(url){
     return mongoose.connect(url).then(()=>{
         console.log("Connected to MOngoDB Database: AgroW")
     }).catch((err)=>{
