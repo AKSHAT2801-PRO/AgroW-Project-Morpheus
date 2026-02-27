@@ -89,8 +89,8 @@ const TopBar = ({ toggleSidebar }) => {
                 >
                     <Menu size={24} />
                 </button>
-                <Link to="/feed" className="flex items-center gap-2 hidden sm:flex">
-                    <span className="text-2xl font-black text-green-700 tracking-tight">AgroW</span>
+                <Link to="/feed" className="items-center gap-2 hidden sm:flex">
+                    <span className="text-2xl font-black text-green-700 tracking-tight hidden xs:block">AgroW</span>
                 </Link>
             </div>
 
@@ -144,7 +144,7 @@ const TopBar = ({ toggleSidebar }) => {
 
                 <button
                     onClick={() => navigate('/submit')}
-                    className="hidden lg:flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm transition-colors"
+                    className="hidden xl:flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm transition-colors"
                 >
                     <Plus size={18} />
                     <span>Create Post</span>
@@ -182,7 +182,8 @@ const TopBar = ({ toggleSidebar }) => {
                     </select>
                 </div>
 
-                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative">
+                {/* Notification Bell (Hidden on very small mobile) */}
+                <button className="hidden xs:block p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative">
                     <Bell size={20} />
                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
