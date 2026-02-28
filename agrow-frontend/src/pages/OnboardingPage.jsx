@@ -123,37 +123,35 @@ const OnboardingPage = () => {
                 localStorage.setItem('customUserId', customUserId);
 
                 const basePayload = {
-                    userId: customUserId,
+                    role: role,
+                    userName: customUserId,
                     firstName: formData.firstName?.trim() || '',
                     lastName: formData.lastName?.trim() || '',
                     email: (formData.email || user?.primaryEmailAddress?.emailAddress || '').trim(),
                     gender: formData.gender || "Not Specified",
+                    credibilityScore: 50,
                     state: formData.state,
                     district: formData.district,
+                    taluka: formData.taluka?.trim() || '',
                     village: formData.village?.trim() || '',
-                    interestedList: formData.interests,
-                    joinedCommunities: formData.communities
+                    cropList: role === 'farmer' ? formData.crops : [],
+                    serviceList: role === 'provider'
+                        ? formData.services.map(s => s === 'Others' ? `Others: ${formData.serviceDesc}` : s)
+                        : [],
+                    interestedIn: formData.interests,
+                    communityJoined: formData.communities,
+                    userContent: [],
+                    likedContent: [],
+                    dislikedContent: []
                 };
 
-                if (role === 'farmer') {
-                    await api.createFarmer({
-                        ...basePayload,
-                        cropList: formData.crops
-                    });
-                } else {
-                    const finalServices = formData.services.map(s =>
-                        s === 'Others' ? `Others: ${formData.serviceDesc}` : s
-                    );
-                    await api.createServiceProvider({
-                        ...basePayload,
-                        serviceList: finalServices.length > 0 ? finalServices : [formData.serviceDesc]
-                    });
-                }
+                await api.setUser(basePayload);
 
-                // Add member to selected communities sequentially so the backend is updated with memberships
+                // Join selected communities sequentially
+                const userEmail = basePayload.email;
                 for (const communityId of formData.communities) {
                     try {
-                        await api.addMemberToCommunity(communityId, role, customUserId);
+                        await api.joinCommunity(userEmail, role, communityId);
                     } catch (e) {
                         console.error(`Failed to join community ${communityId}`, e);
                     }
@@ -571,7 +569,7 @@ const OnboardingPage = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                     {isSelected && <CheckCircle size={18} className={styles.checkIcon} style={{ marginRight: '8px', flexShrink: 0 }} />}
                                     <span style={{ fontWeight: '600', textAlign: 'left', wordBreak: 'break-word', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                        {community.communityName}
+                                        {community.name || community.communityName}
                                     </span>
                                 </div>
                                 <span style={{ fontSize: '0.8rem', color: isSelected ? 'rgba(255,255,255,0.8)' : '#666', marginTop: '4px' }}>

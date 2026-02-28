@@ -9,70 +9,8 @@ import { useUser } from '@clerk/clerk-react';
 import ImageCarousel from '../components/ImageCarousel';
 import PostTag from '../components/PostTag';
 import { formatRelativeTime } from '../utils/timeUtils';
-
-const MOCK_COMMUNITY = {
-    id: 'c1',
-    name: 'Maharashtra Cotton Growers',
-    description: 'A community for cotton farmers in Maharashtra to share tips, asking doubts, and market updates.',
-    membersCount: 1250,
-    isJoined: false,
-    rules: [
-        'Be respectful to all members',
-        'Share only farming-related content',
-        'No spam or promotional posts',
-        'Verify information before sharing advice',
-        'Use appropriate tags for your posts'
-    ],
-    members: [
-        { name: 'Ramesh Shinde', role: 'Admin' },
-        { name: 'Dr. Patil', role: 'Expert' },
-        { name: 'Suresh Kulkarni', role: 'Member' },
-        { name: 'Anita Deshmukh', role: 'Member' },
-        { name: 'Vikram Jadhav', role: 'Member' },
-    ]
-};
-
-const MOCK_POSTS = [
-    {
-        id: 'p1',
-        author: { name: 'Ramesh Shinde', username: 'ramesh_s', credibility: 78 },
-        community: { id: 'c1', name: 'Maharashtra Cotton Growers' },
-        date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        title: 'Best fertilizer schedule for late-sown Bt Cotton?',
-        tags: ['Doubt'],
-        body: 'I had to sow my Bt Cotton crop slightly late this year due to delayed rains. Should I adjust the standard NPK application schedule? Any recommendations for foliar sprays?',
-        images: [],
-        likes: 12,
-        dislikes: 1,
-        isLikedByUser: false,
-        isDislikedByUser: false,
-        comments: [],
-        isOwn: false,
-    },
-    {
-        id: 'p2',
-        author: { name: 'Kisan Admin', username: 'admin', credibility: 95 },
-        community: { id: 'c1', name: 'Maharashtra Cotton Growers' },
-        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        title: 'Identifying Pink Bollworm Infestation Early',
-        tags: ['Knowledge'],
-        body: 'Early detection of Pink Bollworm is essential to prevent huge yield losses. Look for Rosette flowers (flowers that fail to open fully and appear clumped).',
-        images: ['https://images.unsplash.com/photo-1596489391152-16782255d6b4?w=800&q=80'],
-        likes: 89,
-        dislikes: 2,
-        isLikedByUser: true,
-        isDislikedByUser: false,
-        comments: [
-            { id: 'cm1', author: 'Dr. Patil', text: 'Pheromone traps are also highly recommended.', isOwn: false, likes: 8, dislikes: 0, isLikedByUser: false, isDislikedByUser: false }
-        ],
-        isOwn: false,
-    }
-];
-
-const MOCK_ALL_COMMUNITIES = [
-    { id: 'c1', name: 'Maharashtra Cotton Growers' },
-    { id: 'c2', name: 'Pune Dairy Tech' },
-];
+import { api } from '../services/api';
+import toast from 'react-hot-toast';
 
 const CommunityPage = () => {
     const { communityId } = useParams();
@@ -81,6 +19,7 @@ const CommunityPage = () => {
 
     const [community, setCommunity] = useState(null);
     const [posts, setPosts] = useState([]);
+    const [allCommunities, setAllCommunities] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedComments, setExpandedComments] = useState({});
 
@@ -102,13 +41,92 @@ const CommunityPage = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Fetch community data & content from API
     useEffect(() => {
-        setIsLoading(true);
-        setTimeout(() => {
-            setCommunity({ ...MOCK_COMMUNITY, id: communityId || 'c1' });
-            setPosts(MOCK_POSTS);
-            setIsLoading(false);
-        }, 1000);
+        const fetchCommunityData = async () => {
+            setIsLoading(true);
+            try {
+                const email = user?.primaryEmailAddress?.emailAddress || '';
+
+                // Fetch all communities to find this one's details
+                const allRes = await api.getAllCommunities();
+                const allComms = allRes.communities || allRes.data || allRes;
+                let commData = null;
+                if (Array.isArray(allComms)) {
+                    commData = allComms.find(c => (c._id || c.id) === communityId);
+                    setAllCommunities(allComms.map(c => ({ id: c._id || c.id, name: c.name || c.communityName || '' })));
+                }
+
+                if (commData) {
+                    const membersArr = commData.members || [];
+                    setCommunity({
+                        id: commData._id || commData.id,
+                        name: commData.name || commData.communityName || '',
+                        description: commData.description || '',
+                        membersCount: membersArr.length,
+                        isJoined: membersArr.includes(email),
+                        rules: commData.rules ? (typeof commData.rules === 'string' ? commData.rules.split('\n').filter(Boolean) : commData.rules) : [],
+                        members: membersArr.map(m => ({ name: m, role: 'Member' }))
+                    });
+                } else {
+                    setCommunity({
+                        id: communityId,
+                        name: 'Community',
+                        description: '',
+                        membersCount: 0,
+                        isJoined: false,
+                        rules: [],
+                        members: []
+                    });
+                }
+
+                // Fetch content
+                try {
+                    const contentRes = await api.getCommunityContent(communityId);
+                    const content = contentRes.content || contentRes.data || contentRes;
+                    if (Array.isArray(content)) {
+                        const mapped = content.map(c => ({
+                            id: c._id || c.id,
+                            author: {
+                                name: c.postedBy || 'Unknown',
+                                username: c.postedBy || 'unknown',
+                                credibility: 50
+                            },
+                            community: { id: communityId, name: commData?.name || commData?.communityName || '' },
+                            date: c.createdOn || new Date().toISOString(),
+                            title: c.title || '',
+                            tags: c.tags || [],
+                            body: c.description || '',
+                            images: c.media ? [c.media] : [],
+                            likes: Array.isArray(c.likes) ? c.likes.length : (c.likes || 0),
+                            dislikes: Array.isArray(c.dislikes) ? c.dislikes.length : (c.dislikes || 0),
+                            isLikedByUser: Array.isArray(c.likes) ? c.likes.includes(email) : false,
+                            isDislikedByUser: Array.isArray(c.dislikes) ? c.dislikes.includes(email) : false,
+                            comments: Array.isArray(c.comments) ? c.comments.map(cm => ({
+                                id: cm._id || cm.id || Math.random().toString(36),
+                                author: cm.commentedBy || 'Unknown',
+                                text: cm.commentText || '',
+                                isOwn: cm.commentedBy === email,
+                                likes: 0,
+                                dislikes: 0,
+                                isLikedByUser: false,
+                                isDislikedByUser: false
+                            })) : [],
+                            isOwn: c.postedBy === email
+                        }));
+                        setPosts(mapped);
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch community content', e);
+                    setPosts([]);
+                }
+            } catch (err) {
+                console.error('Failed to fetch community', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchCommunityData();
     }, [communityId]);
 
     const showToast = (message) => {
@@ -116,8 +134,12 @@ const CommunityPage = () => {
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    const toggleJoinLeave = () => {
+    const toggleJoinLeave = async () => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const role = localStorage.getItem('userRole') || 'farmer';
         const newJoinState = !community.isJoined;
+
+        // Optimistic UI
         setCommunity({
             ...community,
             isJoined: newJoinState,
@@ -127,6 +149,21 @@ const CommunityPage = () => {
             detail: { communityId: community.id, isJoined: newJoinState }
         }));
         showToast(newJoinState ? `Joined ${community.name}` : `Left ${community.name}`);
+
+        try {
+            if (newJoinState) {
+                await api.joinCommunity(email, role, community.id);
+            } else {
+                await api.leaveCommunity(email, role, community.id);
+            }
+
+            // Re-sync actual join state from backend
+            const joinedIds = await api.getUserCommunity(email, role);
+            const isNowJoined = Array.isArray(joinedIds) && joinedIds.includes(community.id);
+            setCommunity(prev => ({ ...prev, isJoined: isNowJoined }));
+        } catch (err) {
+            console.error('Join/Leave failed', err);
+        }
     };
 
     const getInitials = (name) => name ? name.charAt(0).toUpperCase() : '?';
@@ -146,35 +183,67 @@ const CommunityPage = () => {
         return 'text-red-700 bg-red-50 border-red-200';
     };
 
-    const handleLike = (postId) => {
-        setPosts(posts.map(post => {
-            if (post.id === postId) {
-                const wasLiked = post.isLikedByUser;
+    const handleLike = async (postId) => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const role = localStorage.getItem('userRole') || 'farmer';
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
+                const wasLiked = p.isLikedByUser;
                 return {
-                    ...post, isLikedByUser: !wasLiked, isDislikedByUser: false,
-                    likes: wasLiked ? post.likes - 1 : post.likes + 1,
-                    dislikes: post.isDislikedByUser ? post.dislikes - 1 : post.dislikes
+                    ...p, isLikedByUser: !wasLiked, isDislikedByUser: false,
+                    likes: wasLiked ? p.likes - 1 : p.likes + 1,
+                    dislikes: p.isDislikedByUser ? p.dislikes - 1 : p.dislikes
                 };
             }
-            return post;
+            return p;
         }));
+
+        try {
+            if (post.isLikedByUser) {
+                await api.removeLikeFromContent(email, role, postId);
+            } else {
+                if (post.isDislikedByUser) await api.removeDislikeFromContent(email, role, postId);
+                await api.likeContent(email, role, postId);
+            }
+        } catch (err) { console.error('Like failed', err); }
     };
 
-    const handleDislike = (postId) => {
-        setPosts(posts.map(post => {
-            if (post.id === postId) {
-                const wasDisliked = post.isDislikedByUser;
+    const handleDislike = async (postId) => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const role = localStorage.getItem('userRole') || 'farmer';
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
+                const wasDisliked = p.isDislikedByUser;
                 return {
-                    ...post, isDislikedByUser: !wasDisliked, isLikedByUser: false,
-                    dislikes: wasDisliked ? post.dislikes - 1 : post.dislikes + 1,
-                    likes: post.isLikedByUser ? post.likes - 1 : post.likes
+                    ...p, isDislikedByUser: !wasDisliked, isLikedByUser: false,
+                    dislikes: wasDisliked ? p.dislikes - 1 : p.dislikes + 1,
+                    likes: p.isLikedByUser ? p.likes - 1 : p.likes
                 };
             }
-            return post;
+            return p;
         }));
+
+        try {
+            if (post.isDislikedByUser) {
+                await api.removeDislikeFromContent(email, role, postId);
+            } else {
+                if (post.isLikedByUser) await api.removeLikeFromContent(email, role, postId);
+                await api.dislikeContent(email, role, postId);
+            }
+        } catch (err) { console.error('Dislike failed', err); }
     };
 
-    const handleCommentLike = (postId, commentId) => {
+    const handleCommentLike = async (postId, commentId) => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const comment = posts.find(p => p.id === postId)?.comments.find(c => c.id === commentId);
+        if (!comment) return;
+
         setPosts(posts.map(post => {
             if (post.id === postId) {
                 return {
@@ -189,6 +258,14 @@ const CommunityPage = () => {
             }
             return post;
         }));
+
+        try {
+            if (comment.isLikedByUser) {
+                await api.removeLikeFromComment(email, commentId);
+            } else {
+                await api.likeComment(email, commentId);
+            }
+        } catch (err) { console.error('Comment like failed', err); }
     };
 
     const handleCommentDislike = (postId, commentId) => {
@@ -212,14 +289,15 @@ const CommunityPage = () => {
         setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
-    const deletePost = (postId) => {
+    const deletePost = async (postId) => {
         if (window.confirm('Are you sure you want to delete this post?')) {
             setPosts(posts.filter(p => p.id !== postId));
             showToast('Post deleted');
+            try { await api.removeContent(postId); } catch (err) { console.error('Delete failed', err); }
         }
     };
 
-    const deleteComment = (postId, commentId) => {
+    const deleteComment = async (postId, commentId) => {
         if (window.confirm('Delete comment?')) {
             setPosts(posts.map(post => {
                 if (post.id === postId) {
@@ -227,6 +305,37 @@ const CommunityPage = () => {
                 }
                 return post;
             }));
+            try { await api.removeCommentFromContent(postId, commentId); } catch (err) { console.error('Delete comment failed', err); }
+        }
+    };
+
+    const handleAddComment = async (postId, commentText) => {
+        if (!commentText.trim()) return;
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        try {
+            await api.commentOnContent({
+                contentId: postId,
+                commentedBy: email,
+                commentText: commentText.trim(),
+                commentOn: new Date().toISOString()
+            });
+            const newComment = {
+                id: Date.now().toString(),
+                author: email,
+                text: commentText.trim(),
+                isOwn: true,
+                likes: 0, dislikes: 0,
+                isLikedByUser: false,
+                isDislikedByUser: false
+            };
+            setPosts(posts.map(p => {
+                if (p.id === postId) return { ...p, comments: [...p.comments, newComment] };
+                return p;
+            }));
+            toast.success('Comment added');
+        } catch (err) {
+            console.error('Comment failed', err);
+            toast.error('Failed to add comment');
         }
     };
 
@@ -520,7 +629,7 @@ const CommunityPage = () => {
                         </div>
                         <div className="p-2 max-h-[300px] overflow-y-auto">
                             <p className="px-2 py-1 text-xs font-bold text-slate-400 uppercase tracking-wide">Share to Community</p>
-                            {MOCK_ALL_COMMUNITIES.map(comm => {
+                            {allCommunities.map(comm => {
                                 const isCurrentCommunity = shareModal.post?.community?.id === comm.id;
                                 return (
                                     <button key={comm.id} onClick={() => !isCurrentCommunity && handleShare(comm)} disabled={isCurrentCommunity}

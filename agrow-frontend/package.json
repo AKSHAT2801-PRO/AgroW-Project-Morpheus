@@ -10,6 +10,7 @@
     },
     "dependencies": {
         "@clerk/clerk-react": "^5.61.2",
+        "axios": "^1.13.6",
         "india-state-district": "^1.0.5",
         "lucide-react": "^0.344.0",
         "react": "^18.2.0",

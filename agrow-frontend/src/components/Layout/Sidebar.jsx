@@ -3,20 +3,35 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     Home, Tractor, BookOpen, Compass, Plus,
     Star, Settings, Leaf,
-    Moon, Sun, Languages
+    Moon, Sun, Languages, Loader2
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useUser } from '@clerk/clerk-react';
+import { useUserData } from '../../contexts/UserDataContext';
 
 const COLLAPSED_WIDTH = 68;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
 const DEFAULT_WIDTH = 270;
 
+const AVATAR_COLORS = [
+    '#81C784', '#FFB74D', '#64B5F6', '#BA68C8', '#4DB6AC',
+    '#FF8A65', '#A1887F', '#90A4AE', '#AED581', '#FFD54F'
+];
+
+const getAvatarColor = (name) => {
+    if (!name) return AVATAR_COLORS[0];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
+
 const Sidebar = ({ isOpen, toggleSidebar, isCollapsed }) => {
     const location = useLocation();
+    const { user } = useUser();
+    const { joinedCommunities, isLoading: isLoadingCommunities } = useUserData();
     const [userRole, setUserRole] = useState('farmer');
-    const [refreshKey, setRefreshKey] = useState(0);
     const { isDark, toggleTheme } = useTheme();
     const { language, setLanguage } = useLanguage();
 
@@ -27,14 +42,6 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed }) => {
     useEffect(() => {
         const role = localStorage.getItem('userRole') || 'farmer';
         setUserRole(role);
-    }, []);
-
-    useEffect(() => {
-        const handleMembershipChange = () => {
-            setRefreshKey(prev => prev + 1);
-        };
-        window.addEventListener('communityMembershipChanged', handleMembershipChange);
-        return () => window.removeEventListener('communityMembershipChanged', handleMembershipChange);
     }, []);
 
     // Drag resize handlers
@@ -63,14 +70,6 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed }) => {
             document.removeEventListener('mouseup', handleMouseUp);
         };
     }, []);
-
-    const MOCK_COMMUNITIES = [
-        { id: 'c1', name: 'Maharashtra Cotton', color: 'bg-[#81C784]' },
-        { id: 'c2', name: 'Pune Dairy Tech', color: 'bg-[#FFB74D]' },
-        { id: 'c3', name: 'Nashik Grape Growers', color: 'bg-[#64B5F6]' },
-        { id: 'c4', name: 'Organic Farming Hub', color: 'bg-[#BA68C8]' },
-        { id: 'c5', name: 'Tractor Owners Pune', color: 'bg-[#4DB6AC]' }
-    ];
 
     const NavItem = ({ to, icon: Icon, label, isActive }) => {
         const activeClass = isActive
@@ -137,27 +136,38 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed }) => {
                         <NavItem to="/schemes" icon={BookOpen} label="Government Schemes" isActive={isCurrentPath('/schemes')} />
                     </div>
 
+                    {/* Separator */}
+                    <div className="mx-4 border-t border-slate-100" />
+
                     {/* Communities - expanded */}
                     {!isCollapsed && (
                         <div>
                             <h3 className="px-6 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Communities</h3>
                             <div className="space-y-1 mb-2 max-h-[240px] overflow-y-auto hide-scrollbar px-3">
-                                {MOCK_COMMUNITIES.map(comm => (
-                                    <Link
-                                        key={comm.id}
-                                        to={`/c/${comm.id}`}
-                                        onClick={() => { if (window.innerWidth < 1024) toggleSidebar() }}
-                                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isCurrentPath(`/c/${comm.id}`)
-                                            ? 'bg-green-50 text-green-800 font-bold'
-                                            : 'text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <div className={`w-8 h-8 rounded-full ${comm.color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>
-                                            {comm.name.charAt(0)}
-                                        </div>
-                                        <span className="truncate text-base font-semibold notranslate" translate="no">{comm.name}</span>
-                                    </Link>
-                                ))}
+                                {isLoadingCommunities ? (
+                                    <div className="flex items-center justify-center py-4 text-slate-400">
+                                        <Loader2 size={20} className="animate-spin" />
+                                    </div>
+                                ) : joinedCommunities.length === 0 ? (
+                                    <p className="text-sm text-slate-400 px-3 py-2">No communities joined yet</p>
+                                ) : (
+                                    joinedCommunities.map(comm => (
+                                        <Link
+                                            key={comm.id}
+                                            to={`/c/${comm.id}`}
+                                            onClick={() => { if (window.innerWidth < 1024) toggleSidebar() }}
+                                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isCurrentPath(`/c/${comm.id}`)
+                                                ? 'bg-green-50 text-green-800 font-bold'
+                                                : 'text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                        >
+                                            <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm shrink-0" style={{ backgroundColor: getAvatarColor(comm.name) }}>
+                                                {comm.name.charAt(0)}
+                                            </div>
+                                            <span className="truncate text-base font-semibold notranslate" translate="no">{comm.name}</span>
+                                        </Link>
+                                    ))
+                                )}
                             </div>
                             <div className="space-y-1 px-3">
                                 <Link to="/communities" className="flex items-center gap-3 px-3 py-2 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors font-medium">
@@ -172,17 +182,20 @@ const Sidebar = ({ isOpen, toggleSidebar, isCollapsed }) => {
                         </div>
                     )}
 
+                    {/* Separator before Resources */}
+                    {!isCollapsed && <div className="mx-4 border-t border-slate-100" />}
+
                     {/* Communities - collapsed (just avatars) */}
                     {isCollapsed && (
                         <div className="space-y-1 px-2">
-                            {MOCK_COMMUNITIES.slice(0, 3).map(comm => (
+                            {joinedCommunities.slice(0, 3).map(comm => (
                                 <Link
                                     key={comm.id}
                                     to={`/c/${comm.id}`}
                                     title={comm.name}
                                     className="flex items-center justify-center py-2"
                                 >
-                                    <div className={`w-8 h-8 rounded-full ${comm.color} text-white flex items-center justify-center font-bold text-sm`}>
+                                    <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm" style={{ backgroundColor: getAvatarColor(comm.name) }}>
                                         {comm.name.charAt(0)}
                                     </div>
                                 </Link>

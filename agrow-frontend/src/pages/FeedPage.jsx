@@ -4,7 +4,7 @@ import {
     MoreHorizontal, Trash2, Bookmark, EyeOff, Flag,
     ThumbsUp, ThumbsDown, MessageSquare, Share2, X, Leaf,
     Send, Plus, Copy, Shield,
-    TrendingUp, Newspaper, Sparkles, Award, BookOpen, HelpCircle
+    TrendingUp, Newspaper, Sparkles, Award, Info, HelpCircle, BookOpen, Users
 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { PostSkeletonList } from '../components/PostSkeleton';
@@ -13,95 +13,38 @@ import ImageCarousel from '../components/ImageCarousel';
 import PostTag from '../components/PostTag';
 import { formatRelativeTime } from '../utils/timeUtils';
 import usePageTitle from '../hooks/usePageTitle';
-
-const MOCK_COMMUNITIES = [
-    { id: 'c1', name: 'Maharashtra Cotton', members: 1200 },
-    { id: 'c2', name: 'Pune Dairy Tech', members: 850 },
-    { id: 'c3', name: 'Nashik Grape Growers', members: 3400 },
-    { id: 'c4', name: 'Organic Farming Hub', members: 5600 },
-    { id: 'c5', name: 'Tractor Owners', members: 920 }
-];
+import { api } from '../services/api';
+import { useUserData } from '../contexts/UserDataContext';
+import { MOCK_POSTS } from '../data/mockData';
 
 const FILTERS = [
     { label: 'Trending', Icon: TrendingUp },
     { label: 'News', Icon: Newspaper },
     { label: 'New', Icon: Sparkles },
     { label: 'Top', Icon: Award },
-    { label: 'Knowledge', Icon: BookOpen },
+    { label: 'Information', Icon: Info },
     { label: 'Doubts', Icon: HelpCircle },
-];
-
-const MOCK_POSTS = [
-    {
-        id: 'p1',
-        author: { name: 'Ramesh Shinde', username: 'ramesh_s', credibility: 78 },
-        community: { id: 'c3', name: 'Nashik Grape Growers' },
-        date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        title: 'Best pruning techniques for Thompson Seedless?',
-        tags: ['Doubt'],
-        body: 'My vines are showing excessive vegetative growth this season. What pruning strategy should I adopt to balance growth and ensure good cluster formation?\n\nAny advice is appreciated.',
-        images: [
-            'https://images.unsplash.com/photo-1596489391152-16782255d6b4?w=800&q=80',
-            'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80',
-            'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&q=80',
-        ],
-        likes: 24, dislikes: 2,
-        isLikedByUser: false, isDislikedByUser: false,
-        comments: [
-            { id: 'cm1', author: 'Dr. Patil', text: 'You should consider dormant pruning taking out 20-30% of the canes.', isOwn: false, likes: 5, dislikes: 0, isLikedByUser: false, isDislikedByUser: false }
-        ],
-        isOwn: false,
-    },
-    {
-        id: 'p2',
-        author: { name: 'Kisan Admin', username: 'admin', credibility: 95 },
-        community: { id: 'c4', name: 'Organic Farming Hub' },
-        date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        title: 'Step by Step: Making Jeevamrutha at home',
-        tags: ['Knowledge', 'Information'],
-        body: 'Jeevamrutha is an excellent organic fertilizer. Here is what you need:\n1. 10 kg native cow dung\n2. 10 L native cow urine\n3. 1 kg jaggery\n4. 1 kg gram flour\n\nMix well and let it ferment for 48 hours.',
-        images: [],
-        likes: 156, dislikes: 3,
-        isLikedByUser: true, isDislikedByUser: false,
-        comments: [],
-        isOwn: true,
-    }
-];
-
-const MOCK_NEWS = [
-    {
-        id: 'n1',
-        title: 'Government announces new subsidies for drip irrigation systems in drought-prone districts.',
-        source: 'AgriNews India',
-        date: 'Today',
-        image: 'https://images.unsplash.com/photo-1523348837708-15d4a0bcf888?w=800&q=80',
-    },
-    {
-        id: 'n2',
-        title: 'Monsoon expected to arrive early in Maharashtra, IMD reports.',
-        source: 'Weather Hub',
-        date: 'Yesterday',
-        image: null,
-    }
+    { label: 'Story', Icon: BookOpen },
 ];
 
 const FeedPage = () => {
     usePageTitle('Feed');
     const navigate = useNavigate();
     const { user } = useUser();
+    const { joinedCommunities, userData, refreshUser } = useUserData();
+    const communities = joinedCommunities;
     const currentUser = {
         name: user?.fullName || 'Current User',
         username: user?.username || 'user'
     };
 
+    const [newsData, setNewsData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('Trending');
     const [posts, setPosts] = useState([]);
     const [expandedComments, setExpandedComments] = useState({});
     const [openOverflow, setOpenOverflow] = useState(null);
     const overflowRef = useRef(null);
-
-    // Modals
     const [imageModal, setImageModal] = useState({ isOpen: false, url: '' });
     const [shareModal, setShareModal] = useState({ isOpen: false, post: null });
 
@@ -116,23 +59,40 @@ const FeedPage = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Load mock posts on mount — with saved state from sessionStorage
     useEffect(() => {
         setIsLoading(true);
-        const timer = setTimeout(() => {
-            if (activeFilter === 'News') {
-                setPosts(MOCK_NEWS);
-            } else {
-                let filtered = MOCK_POSTS;
-                if (activeFilter === 'Knowledge') filtered = MOCK_POSTS.filter(p => p.tags.includes('Knowledge'));
-                if (activeFilter === 'Doubts') filtered = MOCK_POSTS.filter(p => p.tags.includes('Doubt'));
-                setPosts(filtered);
-            }
-            setIsLoading(false);
-        }, 1500);
-        return () => clearTimeout(timer);
-    }, [activeFilter]);
+        const savedIds = new Set(JSON.parse(sessionStorage.getItem('agrow_saved_posts') || '[]'));
+        const seeded = MOCK_POSTS.map(p => ({ ...p, isSaved: savedIds.has(p.id) }));
+        setPosts(seeded);
+        setIsLoading(false);
+    }, []);
 
-    const [isZoomed, setIsZoomed] = useState(false);
+
+
+    // Derive filtered posts CLIENT-SIDE from the full posts array
+    const filteredPosts = React.useMemo(() => {
+        if (activeFilter === 'Information') {
+            return posts.filter(p => {
+                const cat = (p.category || '').toLowerCase();
+                return cat === 'information' || cat === 'knowledge' || p.tags.some(t => ['information', 'knowledge'].includes(t.toLowerCase()));
+            });
+        }
+        if (activeFilter === 'Doubts') {
+            return posts.filter(p => {
+                const cat = (p.category || '').toLowerCase();
+                return cat === 'doubt' || p.tags.some(t => t.toLowerCase() === 'doubt');
+            });
+        }
+        if (activeFilter === 'Story') {
+            return posts.filter(p => {
+                const cat = (p.category || '').toLowerCase();
+                return cat === 'story' || p.tags.some(t => t.toLowerCase() === 'story');
+            });
+        }
+        // For Trending / New / Top — all posts (could sort differently)
+        return posts;
+    }, [posts, activeFilter]);
 
     const getInitials = (name) => name ? name.charAt(0).toUpperCase() : '?';
 
@@ -152,44 +112,84 @@ const FeedPage = () => {
     };
 
     // Actions
-    const handleLike = (postId) => {
-        setPosts(posts.map(post => {
-            if (post.id === postId) {
-                const wasLiked = post.isLikedByUser;
+    const handleLike = async (postId) => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const role = localStorage.getItem('userRole') || 'farmer';
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        // Optimistic UI update
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
+                const wasLiked = p.isLikedByUser;
                 return {
-                    ...post,
+                    ...p,
                     isLikedByUser: !wasLiked,
                     isDislikedByUser: false,
-                    likes: wasLiked ? post.likes - 1 : post.likes + 1,
-                    dislikes: post.isDislikedByUser ? post.dislikes - 1 : post.dislikes
+                    likes: wasLiked ? p.likes - 1 : p.likes + 1,
+                    dislikes: p.isDislikedByUser ? p.dislikes - 1 : p.dislikes
                 };
             }
-            return post;
+            return p;
         }));
+
+        try {
+            if (post.isLikedByUser) {
+                await api.removeLikeFromContent(email, role, postId);
+            } else {
+                if (post.isDislikedByUser) await api.removeDislikeFromContent(email, role, postId);
+                await api.likeContent(email, role, postId);
+            }
+        } catch (err) {
+            console.error('Like action failed', err);
+        }
+        refreshUser();
     };
 
-    const handleDislike = (postId) => {
-        setPosts(posts.map(post => {
-            if (post.id === postId) {
-                const wasDisliked = post.isDislikedByUser;
+    const handleDislike = async (postId) => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const role = localStorage.getItem('userRole') || 'farmer';
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
+                const wasDisliked = p.isDislikedByUser;
                 return {
-                    ...post,
+                    ...p,
                     isDislikedByUser: !wasDisliked,
                     isLikedByUser: false,
-                    dislikes: wasDisliked ? post.dislikes - 1 : post.dislikes + 1,
-                    likes: post.isLikedByUser ? post.likes - 1 : post.likes
+                    dislikes: wasDisliked ? p.dislikes - 1 : p.dislikes + 1,
+                    likes: p.isLikedByUser ? p.likes - 1 : p.likes
                 };
             }
-            return post;
+            return p;
         }));
+
+        try {
+            if (post.isDislikedByUser) {
+                await api.removeDislikeFromContent(email, role, postId);
+            } else {
+                if (post.isLikedByUser) await api.removeLikeFromContent(email, role, postId);
+                await api.dislikeContent(email, role, postId);
+            }
+        } catch (err) {
+            console.error('Dislike action failed', err);
+        }
+        refreshUser();
     };
 
-    const handleCommentLike = (postId, commentId) => {
-        setPosts(posts.map(post => {
-            if (post.id === postId) {
+    const handleCommentLike = async (postId, commentId) => {
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        const post = posts.find(p => p.id === postId);
+        const comment = post?.comments.find(c => c.id === commentId);
+        if (!comment) return;
+
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
                 return {
-                    ...post,
-                    comments: post.comments.map(c => {
+                    ...p,
+                    comments: p.comments.map(c => {
                         if (c.id === commentId) {
                             const wasLiked = c.isLikedByUser;
                             return {
@@ -204,16 +204,27 @@ const FeedPage = () => {
                     })
                 };
             }
-            return post;
+            return p;
         }));
+
+        try {
+            if (comment.isLikedByUser) {
+                await api.removeLikeFromComment(email, commentId);
+            } else {
+                await api.likeComment(email, commentId);
+            }
+        } catch (err) {
+            console.error('Comment like failed', err);
+        }
     };
 
     const handleCommentDislike = (postId, commentId) => {
-        setPosts(posts.map(post => {
-            if (post.id === postId) {
+        // Comment dislike is local-only (no backend route for comment dislike)
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
                 return {
-                    ...post,
-                    comments: post.comments.map(c => {
+                    ...p,
+                    comments: p.comments.map(c => {
                         if (c.id === commentId) {
                             const wasDisliked = c.isDislikedByUser;
                             return {
@@ -228,7 +239,7 @@ const FeedPage = () => {
                     })
                 };
             }
-            return post;
+            return p;
         }));
     };
 
@@ -236,13 +247,20 @@ const FeedPage = () => {
         setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
-    const deletePost = (postId) => {
+    const deletePost = async (postId) => {
         if (window.confirm('Are you sure you want to delete this post?')) {
             setPosts(posts.filter(p => p.id !== postId));
+            try {
+                await api.removeContent(postId);
+                toast.success('Post deleted');
+                refreshUser();
+            } catch (err) {
+                console.error('Delete post failed', err);
+            }
         }
     };
 
-    const deleteComment = (postId, commentId) => {
+    const deleteComment = async (postId, commentId) => {
         if (window.confirm('Delete comment?')) {
             setPosts(posts.map(post => {
                 if (post.id === postId) {
@@ -250,6 +268,48 @@ const FeedPage = () => {
                 }
                 return post;
             }));
+            try {
+                await api.removeCommentFromContent(postId, commentId);
+                toast.success('Comment deleted');
+            } catch (err) {
+                console.error('Delete comment failed', err);
+            }
+        }
+    };
+
+    const handleAddComment = async (postId, commentText) => {
+        if (!commentText.trim()) return;
+        const email = user?.primaryEmailAddress?.emailAddress || '';
+        try {
+            await api.commentOnContent({
+                contentId: postId,
+                commentedBy: email,
+                commentText: commentText.trim(),
+                commentOn: new Date().toISOString()
+            });
+
+            // Optimistic UI update
+            const newComment = {
+                id: Date.now().toString(),
+                author: email,
+                text: commentText.trim(),
+                isOwn: true,
+                likes: 0,
+                dislikes: 0,
+                isLikedByUser: false,
+                isDislikedByUser: false
+            };
+            setPosts(posts.map(p => {
+                if (p.id === postId) {
+                    return { ...p, comments: [...p.comments, newComment] };
+                }
+                return p;
+            }));
+            toast.success('Comment added');
+            refreshUser();
+        } catch (err) {
+            console.error('Comment failed', err);
+            toast.error('Failed to add comment');
         }
     };
 
@@ -267,26 +327,42 @@ const FeedPage = () => {
 
             <main className="max-w-[1100px] mx-auto px-4 sm:px-6 w-full mt-4 space-y-5">
 
-                {/* 1. User Communities Row */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-                    <h3 className="text-base font-bold text-slate-800 mb-3">Your Communities</h3>
-                    <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
-                        <div onClick={() => navigate('/communities')} className="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] group">
-                            <div className="w-14 h-14 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:border-green-500 group-hover:text-green-500 transition-colors">
-                                <Plus size={24} />
+                {/* 1. User Communities Row — no white card wrapper */}
+                <div className="px-1">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Users size={16} className="text-slate-500" />
+                        <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Your Communities</h3>
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
+                        {/* Join button */}
+                        <div onClick={() => navigate('/communities')} className="flex flex-col items-center gap-1.5 cursor-pointer group" style={{ width: 72, minWidth: 72 }}>
+                            <div className="w-12 h-12 rounded-full bg-white border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:border-green-500 group-hover:text-green-600 transition-colors shadow-sm">
+                                <Plus size={20} />
                             </div>
-                            <span className="text-sm font-semibold text-slate-700 text-center leading-tight">Join<br />New</span>
+                            <span className="text-xs font-semibold text-slate-500 text-center leading-tight group-hover:text-green-600 transition-colors">Join</span>
                         </div>
-                        {MOCK_COMMUNITIES.map(comm => (
-                            <div key={comm.id} onClick={() => navigate(`/c/${comm.id}`)} className="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] group">
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white font-bold text-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow ring-2 ring-white transform group-hover:-translate-y-1 duration-200">
-                                    {getInitials(comm.name)}
+                        {communities.map(comm => {
+                            const avatarColor = (() => {
+                                const COLORS = ['#81C784', '#FFB74D', '#64B5F6', '#BA68C8', '#4DB6AC', '#FF8A65', '#A1887F', '#90A4AE', '#AED581', '#FFD54F'];
+                                if (!comm.name) return COLORS[0];
+                                let h = 0;
+                                for (let i = 0; i < comm.name.length; i++) h = comm.name.charCodeAt(i) + ((h << 5) - h);
+                                return COLORS[Math.abs(h) % COLORS.length];
+                            })();
+                            return (
+                                <div key={comm.id} onClick={() => navigate(`/c/${comm.id}`)} className="flex flex-col items-center gap-1.5 cursor-pointer group" style={{ width: 72, minWidth: 72 }}>
+                                    <div
+                                        className="w-12 h-12 rounded-full text-white font-bold text-lg flex items-center justify-center group-hover:-translate-y-0.5 transition-all duration-200"
+                                        style={{ backgroundColor: avatarColor, boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}
+                                    >
+                                        {getInitials(comm.name)}
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-700 text-center leading-tight w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                        {comm.name}
+                                    </span>
                                 </div>
-                                <span className="text-sm font-semibold text-slate-800 text-center leading-tight overflow-hidden text-ellipsis line-clamp-2 w-full">
-                                    {comm.name}
-                                </span>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -316,8 +392,8 @@ const FeedPage = () => {
                     {/* Loading State — shimmer skeletons */}
                     {isLoading && <PostSkeletonList count={3} />}
 
-                    {/* Empty State */}
-                    {!isLoading && posts.length === 0 && (
+                    {/* Empty State — no posts at all */}
+                    {!isLoading && filteredPosts.length === 0 && posts.length === 0 && (
                         <div className="bg-white rounded-2xl p-12 text-center border border-slate-100 shadow-sm">
                             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Leaf className="text-slate-300" size={32} />
@@ -327,6 +403,13 @@ const FeedPage = () => {
                             <button onClick={() => navigate('/submit')} className="bg-green-600 text-white py-2 px-6 rounded-lg font-bold hover:bg-green-700 transition-colors">
                                 Create Post
                             </button>
+                        </div>
+                    )}
+
+                    {/* Empty State — filter active but no matching posts */}
+                    {!isLoading && filteredPosts.length === 0 && posts.length > 0 && (
+                        <div className="bg-white rounded-2xl p-10 text-center border border-slate-100 shadow-sm">
+                            <p className="text-slate-500 font-semibold">No <span className="text-green-700">{activeFilter}</span> posts found in your communities yet.</p>
                         </div>
                     )}
 
@@ -349,7 +432,7 @@ const FeedPage = () => {
                     ))}
 
                     {/* Normal Posts Render */}
-                    {!isLoading && activeFilter !== 'News' && posts.map(post => {
+                    {!isLoading && activeFilter !== 'News' && filteredPosts.map(post => {
                         const { relative: relDate, absolute: absDate } = formatRelativeTime(post.date);
                         return (
                             <div key={post.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
@@ -357,19 +440,14 @@ const FeedPage = () => {
                                 <div className="p-4 pb-2 flex justify-between items-start">
                                     <div className="flex gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 cursor-pointer">
-                                            {getInitials(post.author.name)}
+                                            {getInitials(post.community.name)}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <h4 className="font-bold text-slate-900 text-sm hover:underline cursor-pointer notranslate" translate="no">{post.author.name}</h4>
-                                                {/* Credibility Score */}
-                                                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded border ${getCredibilityColor(post.author.credibility)}`}>
-                                                    <Shield size={10} />
-                                                    {post.author.credibility}/100
-                                                </span>
+                                                <h4 className="font-bold text-slate-900 text-sm hover:underline cursor-pointer notranslate" translate="no">{post.community.name}</h4>
                                             </div>
                                             <p className="text-xs text-slate-500 flex items-center gap-1">
-                                                <span className="font-medium hover:text-slate-700 cursor-pointer notranslate" translate="no">{post.community.name}</span>
+                                                <span className="font-medium hover:text-slate-700 cursor-pointer notranslate" translate="no">{post.author.name}</span>
                                                 <span>•</span>
                                                 <time
                                                     dateTime={post.date}
@@ -381,32 +459,48 @@ const FeedPage = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="relative" ref={openOverflow === post.id ? overflowRef : null}>
-                                        <button
-                                            onClick={() => setOpenOverflow(openOverflow === post.id ? null : post.id)}
-                                            className="p-2 hover:bg-slate-50 hover:text-slate-700 rounded-full transition-colors text-slate-400"
-                                        >
-                                            <MoreHorizontal size={20} />
-                                        </button>
-                                        {openOverflow === post.id && (
-                                            <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in slide-in-from-top-2">
-                                                <button onClick={() => { toast.success('Post saved!'); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium">
-                                                    <Bookmark size={16} className="text-slate-400" /> Save Post
-                                                </button>
-                                                <button onClick={() => { setPosts(posts.filter(p => p.id !== post.id)); toast('Post hidden', { icon: '🙈' }); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium">
-                                                    <EyeOff size={16} className="text-slate-400" /> Hide Post
-                                                </button>
+                                    <div className="flex items-center gap-2">
+                                        {/* Category badge beside overflow */}
+                                        {post.category && (() => {
+                                            const TAG_STYLES = {
+                                                Information: 'bg-teal-50 text-teal-700 border-teal-200',
+                                                Doubt: 'bg-red-50 text-red-700 border-red-200',
+                                                Story: 'bg-violet-50 text-violet-700 border-violet-200',
+                                            };
+                                            const style = TAG_STYLES[post.category] || 'bg-slate-100 text-slate-600 border-slate-200';
+                                            return (
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${style}`}>
+                                                    {post.category}
+                                                </span>
+                                            );
+                                        })()}
+                                        <div className="relative" ref={openOverflow === post.id ? overflowRef : null}>
+                                            <button
+                                                onClick={() => setOpenOverflow(openOverflow === post.id ? null : post.id)}
+                                                className="p-2 hover:bg-slate-50 hover:text-slate-700 rounded-full transition-colors text-slate-400"
+                                            >
+                                                <MoreHorizontal size={20} />
+                                            </button>
+                                            {openOverflow === post.id && (
+                                                <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in slide-in-from-top-2">
+                                                    <button onClick={() => { toast.success('Post saved!'); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium">
+                                                        <Bookmark size={16} className="text-slate-400" /> Save Post
+                                                    </button>
+                                                    <button onClick={() => { setPosts(posts.filter(p => p.id !== post.id)); toast('Post hidden', { icon: '🙈' }); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium">
+                                                        <EyeOff size={16} className="text-slate-400" /> Hide Post
+                                                    </button>
 
-                                                {post.isOwn && (
-                                                    <>
-                                                        <div className="border-t border-slate-100 my-1"></div>
-                                                        <button onClick={() => { deletePost(post.id); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
-                                                            <Trash2 size={16} /> Delete Post
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
+                                                    {post.isOwn && (
+                                                        <>
+                                                            <div className="border-t border-slate-100 my-1"></div>
+                                                            <button onClick={() => { deletePost(post.id); setOpenOverflow(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                                                                <Trash2 size={16} /> Delete Post
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -545,7 +639,7 @@ const FeedPage = () => {
 
                         <div className="p-2 max-h-[300px] overflow-y-auto">
                             <p className="px-2 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Share to Community</p>
-                            {MOCK_COMMUNITIES.map(comm => {
+                            {communities.map(comm => {
                                 const isCurrentCommunity = shareModal.post?.community?.id === comm.id;
                                 return (
                                     <button

@@ -3,12 +3,8 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Image as ImageIcon, Search, Tag, Video, X } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { TAG_CONFIG } from '../components/PostTag';
-
-const MOCK_COMMUNITIES = [
-    { id: 'c1', name: 'Maharashtra Cotton Growers' },
-    { id: 'c2', name: 'Pune Dairy Tech' },
-    { id: 'c3', name: 'Organic Farming Hub' }
-];
+import { api } from '../services/api';
+import toast from 'react-hot-toast';
 
 const CreatePostPage = () => {
     const [searchParams] = useSearchParams();
@@ -22,13 +18,30 @@ const CreatePostPage = () => {
     const [body, setBody] = useState('');
     const [mediaFile, setMediaFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [communities, setCommunities] = useState([]);
 
     useEffect(() => {
-        // Enforce mock initialization
-        if (!communityId && MOCK_COMMUNITIES.length > 0) {
-            setCommunityId(MOCK_COMMUNITIES[0].id);
-        }
-    }, [communityId]);
+        const fetchCommunities = async () => {
+            try {
+                const res = await api.getAllCommunities();
+                const data = res.communities || res.data || res;
+                if (Array.isArray(data)) {
+                    // Normalize: ensure every community has a consistent 'id' field
+                    const normalized = data.map(c => ({
+                        ...c,
+                        id: c._id || c.id
+                    }));
+                    setCommunities(normalized);
+                    if (!communityId && normalized.length > 0) {
+                        setCommunityId(normalized[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch communities', err);
+            }
+        };
+        fetchCommunities();
+    }, []);
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -40,19 +53,43 @@ const CreatePostPage = () => {
         setMediaFile(null);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Disabled logic handles preventing click, but triple-check
         if (!title.trim() || !communityId) return;
 
         setIsSubmitting(true);
-        // Simulate API delay
-        setTimeout(() => {
-            setIsSubmitting(false);
-            // Navigate back to the selected community's feed to see the post
+        try {
+            const email = user?.primaryEmailAddress?.emailAddress || '';
+            const role = localStorage.getItem('userRole') || 'farmer';
+
+            const payload = {
+                title: title.trim(),
+                description: body.trim(),
+                category: category || '',
+                tags: tags ? tags.split(',').map(t => t.trim()) : [],
+                userRole: role,
+                postedBy: email,
+                communityIds: [communityId],
+                createdOn: new Date().toISOString(),
+                comments: [],
+                likes: [],
+                dislikes: [],
+                media: '',
+                mediaType: ''
+            };
+
+            console.log('createContent payload:', JSON.stringify(payload, null, 2));
+            console.log('communityId from state:', communityId);
+            await api.createContent(payload);
+            toast.success('Post created successfully!');
             navigate(`/c/${communityId}`);
-        }, 800);
+        } catch (error) {
+            console.error('Error creating post:', error);
+            toast.error('Failed to create post. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const isPostDisabled = !title.trim() || !communityId || isSubmitting;
@@ -80,8 +117,8 @@ const CreatePostPage = () => {
                     className="appearance-none block w-full pl-10 pr-10 py-2 border border-slate-200 rounded-full bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-green-500 font-bold text-sm text-slate-700 cursor-pointer shadow-sm transition-all"
                 >
                     <option value="" disabled>Choose a community</option>
-                    {MOCK_COMMUNITIES.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                    {communities.map(c => (
+                        <option key={c.id} value={c.id}>{c.name || c.communityName}</option>
                     ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
