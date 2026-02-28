@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Users, Loader2 } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
-import { api } from '../services/api';
-import toast from 'react-hot-toast';
+
+const MOCK_COMMUNITIES_DIR = [
+    { id: 'c1', name: 'Maharashtra Cotton Growers', members: 1250, desc: 'A community for cotton farmers in Maharashtra to share tips.', isJoined: false },
+    { id: 'c2', name: 'Pune Dairy Tech', members: 850, desc: 'Discussing modern dairy farming tech and vet care.', isJoined: true },
+    { id: 'c3', name: 'Nashik Grape Growers', members: 3400, desc: 'Export quality grape farming techniques.', isJoined: true },
+    { id: 'c4', name: 'Organic Farming Hub', members: 5600, desc: 'Zero budget natural farming practices.', isJoined: false },
+    { id: 'c5', name: 'Tractor Owners Pune', members: 920, desc: 'Rent, repair, and maintain your machinery.', isJoined: false },
+    { id: 'c6', name: 'Vidarbha Soyabean', members: 4100, desc: 'Seed selection, pest alerts for Soyabean.', isJoined: false },
+];
 
 const CommunitiesListPage = () => {
     const navigate = useNavigate();
-    const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [communities, setCommunities] = useState([]);
@@ -16,71 +21,33 @@ const CommunitiesListPage = () => {
     // Initial Fetch & Debounced Search
     useEffect(() => {
         setIsSearching(true);
-        const delaySearch = setTimeout(async () => {
-            try {
-                let data;
-                if (searchTerm.trim()) {
-                    const res = await api.searchCommunities(searchTerm.trim());
-                    data = res.communities || (Array.isArray(res) ? res : [res]);
-                } else {
-                    const res = await api.getAllCommunities();
-                    data = res.communities || res.data || res;
-                }
-
-                if (Array.isArray(data)) {
-                    // Normalize community objects to have consistent shape
-                    const userEmail = user?.primaryEmailAddress?.emailAddress || '';
-                    const normalized = data.map(c => ({
-                        id: c._id || c.id,
-                        name: c.name || c.communityName || '',
-                        members: c.members ? c.members.length : (c.memberCount || 0),
-                        desc: c.description || '',
-                        isJoined: c.members ? c.members.includes(userEmail) : false
-                    }));
-                    setCommunities(normalized);
-                }
-            } catch (err) {
-                console.error('Failed to fetch communities', err);
-            } finally {
-                setIsSearching(false);
-                setInitialLoad(false);
-            }
+        const delaySearch = setTimeout(() => {
+            const results = MOCK_COMMUNITIES_DIR.filter(c =>
+                c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                c.desc.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            setCommunities(results);
+            setIsSearching(false);
+            setInitialLoad(false);
         }, 500);
 
         return () => clearTimeout(delaySearch);
     }, [searchTerm]);
 
-    const handleJoin = async (e, communityId, currentJoinState) => {
-        e.stopPropagation();
+    const handleJoin = (e, communityId, currentJoinState) => {
+        e.stopPropagation(); // prevent card click
 
-        const email = user?.primaryEmailAddress?.emailAddress || '';
-        const role = localStorage.getItem('userRole') || 'farmer';
+        // Mock API Call
+        setCommunities(communities.map(c =>
+            c.id === communityId
+                ? { ...c, isJoined: !currentJoinState, members: currentJoinState ? c.members - 1 : c.members + 1 }
+                : c
+        ));
 
-        try {
-            if (currentJoinState) {
-                await api.leaveCommunity(email, role, communityId);
-                toast.success('Left community');
-            } else {
-                await api.joinCommunity(email, role, communityId);
-                toast.success('Joined community!');
-            }
-
-            // Re-sync the joined state from backend via getUserCommunity
-            const joinedIds = await api.getUserCommunity(email, role);
-            const joinedSet = new Set(Array.isArray(joinedIds) ? joinedIds : []);
-
-            setCommunities(prev => prev.map(c => ({
-                ...c,
-                isJoined: joinedSet.has(c.id)
-            })));
-
-            window.dispatchEvent(new CustomEvent('communityMembershipChanged', {
-                detail: { communityId, isJoined: !currentJoinState }
-            }));
-        } catch (err) {
-            console.error('Error joining/leaving community', err);
-            toast.error('Action failed. Please try again.');
-        }
+        // Dispatch event for other components (like Sidebar) to update
+        window.dispatchEvent(new CustomEvent('communityMembershipChanged', {
+            detail: { communityId, isJoined: !currentJoinState }
+        }));
     };
 
     return (

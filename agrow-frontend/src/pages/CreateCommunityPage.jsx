@@ -1,63 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, Users, MapPin, Tag, ArrowLeft, ScrollText } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
-import { api } from '../services/api';
-import toast from 'react-hot-toast';
+import { Leaf, Users, MapPin, Tag, ArrowLeft } from 'lucide-react';
 
 const CreateCommunityPage = () => {
     const navigate = useNavigate();
-    const { user } = useUser();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         state: '',
         district: '',
-        taluka: '',
         village: '',
         tags: '',
-        description: '',
-        rules: ''
+        description: ''
     });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);
 
-        try {
-            const email = user?.primaryEmailAddress?.emailAddress || '';
-            const role = localStorage.getItem('userRole') || 'farmer';
-
-            const payload = {
-                name: formData.name,
-                description: formData.description,
-                rules: formData.rules,
-                members: [email],
-                content: [],
-                state: formData.state,
-                district: formData.district,
-                taluka: formData.taluka,
-                village: formData.village,
-                searchTags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : []
-            };
-
-            await api.createCommunity(role, email, payload);
-
+        // Mock API Call
+        setTimeout(() => {
+            // Dispatch event for other components to simulate knowing about this list
             window.dispatchEvent(new CustomEvent('communityMembershipChanged', {
                 detail: { communityId: 'new_c', isJoined: true }
             }));
-            toast.success('Community created successfully!');
-            navigate('/communities');
-        } catch (error) {
-            console.error('Error creating community:', error);
-            toast.error('Failed to create community. Please try again.');
-        } finally {
             setIsLoading(false);
-        }
+            navigate('/c/communities');
+            // Assuming a global toast or similar would notify "Community created!"
+        }, 1500);
     };
 
     return (
@@ -114,16 +88,14 @@ const CreateCommunityPage = () => {
                         </div>
                     </div>
 
-                    {/* Location — Required */}
                     <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-2">
-                            <MapPin size={16} className="text-green-600" /> Location *
+                            <MapPin size={16} className="text-green-600" /> Location (Optional)
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">State *</label>
+                                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">State</label>
                                 <input
-                                    required
                                     type="text"
                                     name="state"
                                     value={formData.state}
@@ -133,9 +105,8 @@ const CreateCommunityPage = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">District *</label>
+                                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">District</label>
                                 <input
-                                    required
                                     type="text"
                                     name="district"
                                     value={formData.district}
@@ -144,40 +115,14 @@ const CreateCommunityPage = () => {
                                     className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 transition-colors text-sm font-medium"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Taluka *</label>
-                                <input
-                                    required
-                                    type="text"
-                                    name="taluka"
-                                    value={formData.taluka}
-                                    onChange={handleChange}
-                                    placeholder="Barshi"
-                                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 transition-colors text-sm font-medium"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Village *</label>
-                                <input
-                                    required
-                                    type="text"
-                                    name="village"
-                                    value={formData.village}
-                                    onChange={handleChange}
-                                    placeholder="Pangri"
-                                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 transition-colors text-sm font-medium"
-                                />
-                            </div>
                         </div>
                     </div>
 
-                    {/* Tags — Required */}
                     <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
-                            <Tag size={16} className="text-green-600" /> Search Tags *
+                            <Tag size={16} className="text-green-600" /> Search Tags (Optional)
                         </h3>
                         <input
-                            required
                             type="text"
                             name="tags"
                             value={formData.tags}
@@ -185,21 +130,6 @@ const CreateCommunityPage = () => {
                             placeholder="e.g., Pomegranate, Export, Drip Irrigation (comma separated)"
                             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 transition-colors text-sm font-medium"
                         />
-                    </div>
-
-                    {/* Community Rules */}
-                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
-                            <ScrollText size={16} className="text-green-600" /> Community Rules
-                        </h3>
-                        <textarea
-                            name="rules"
-                            value={formData.rules}
-                            onChange={handleChange}
-                            rows="3"
-                            placeholder="Enter rules for your community, e.g.&#10;1. Be respectful to all members&#10;2. No spam or self-promotion&#10;3. Stay on topic"
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 transition-colors text-sm font-medium resize-none"
-                        ></textarea>
                     </div>
 
                     <div className="pt-4 flex gap-4">
@@ -229,4 +159,3 @@ const CreateCommunityPage = () => {
 };
 
 export default CreateCommunityPage;
-

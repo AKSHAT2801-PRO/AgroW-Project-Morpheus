@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { api } from '../services/api';
-import { ALL_COMMUNITIES, JOINED_COMMUNITIES } from '../data/mockData';
 
 const UserDataContext = createContext(null);
 
@@ -14,10 +13,9 @@ export const useUserData = () => {
 export const UserDataProvider = ({ children }) => {
     const { user, isSignedIn } = useUser();
     const [userData, setUserData] = useState(null);
-    // Pre-seed with mock data so sidebar shows immediately
-    const [joinedCommunities, setJoinedCommunities] = useState(JOINED_COMMUNITIES);
-    const [allCommunities, setAllCommunities] = useState(ALL_COMMUNITIES);
-    const [isLoading, setIsLoading] = useState(false);
+    const [joinedCommunities, setJoinedCommunities] = useState([]);
+    const [allCommunities, setAllCommunities] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const refreshUser = useCallback(async () => {
         try {
@@ -25,75 +23,60 @@ export const UserDataProvider = ({ children }) => {
             const role = localStorage.getItem('userRole') || 'farmer';
             if (!email || !isSignedIn) { setIsLoading(false); return; }
 
-            // Try fetching real user profile (non-blocking)
-            try {
-                const data = await api.getUser(email, role);
-                setUserData(data);
-            } catch (e) {
-                console.warn('UserDataContext: getUser failed, using mock data', e);
-            }
+            // Fetch user profile
+            const data = await api.getUser(email, role);
+            setUserData(data);
 
-            // Try fetching real joined communities from backend
-            let realJoinedIds = [];
-            try {
-                const ids = await api.getUserCommunity(email, role);
-                console.log('[UserDataContext] getUserCommunity response:', ids);
-                realJoinedIds = Array.isArray(ids) ? ids : [];
-            } catch (e) {
-                console.warn('UserDataContext: getUserCommunity failed, keeping mock communities', e);
-            }
+            // Fetch all communities and resolve joined ones
+            const allRes = await api.getAllCommunities();
+            const allComms = allRes.communities || allRes.data || allRes;
+            if (Array.isArray(allComms)) {
+                setAllCommunities(allComms.map(c => ({
+                    id: c._id || c.id,
+                    name: c.name || c.communityName || '',
+                    members: c.members ? c.members.length : (c.memberCount || 0)
+                })));
 
-            // If backend returned real joined communities, resolve them
-            if (realJoinedIds.length > 0) {
-                try {
-                    const allRes = await api.getAllCommunities();
-                    const allComms = allRes.communities || allRes.data || allRes;
-                    if (Array.isArray(allComms) && allComms.length > 0) {
-                        setAllCommunities(allComms.map(c => ({
+                const joinedIds = data.communityJoined || [];
+                if (joinedIds.length > 0) {
+                    const joined = allComms
+                        .filter(c => joinedIds.includes(c._id || c.id))
+                        .map(c => ({
                             id: c._id || c.id,
                             name: c.name || c.communityName || '',
-                            members: c.members ? c.members.length : (c.memberCount || 0),
-                            isJoined: realJoinedIds.includes(c._id || c.id),
-                            desc: c.description || '',
-                            posts: 0,
-                            tags: c.searchTags || [],
-                            rules: c.rules || '',
-                            about: c.description || '',
-                        })));
-                        const joined = allComms
-                            .filter(c => realJoinedIds.includes(c._id || c.id))
-                            .map(c => ({
-                                id: c._id || c.id,
-                                name: c.name || c.communityName || '',
-                                members: c.members ? c.members.length : (c.memberCount || 0),
-                            }));
-                        if (joined.length > 0) {
-                            setJoinedCommunities(joined);
-                        }
-                    }
-                } catch (e) {
-                    console.warn('UserDataContext: getAllCommunities failed, keeping mock data', e);
+                            members: c.members ? c.members.length : (c.memberCount || 0)
+                        }));
+                    setJoinedCommunities(joined);
+                } else {
+                    setJoinedCommunities([]);
                 }
             }
         } catch (err) {
-            console.error('UserDataContext: refreshUser failed', err);
+            console.error('UserDataContext: Failed to fetch user data', err);
         } finally {
             setIsLoading(false);
         }
     }, [user, isSignedIn]);
 
+    // Initial fetch
     useEffect(() => {
-        if (isSignedIn && user) refreshUser();
+        if (isSignedIn && user) {
+            refreshUser();
+        }
     }, [isSignedIn, user, refreshUser]);
 
+    // Listen for community membership changes
     useEffect(() => {
         const handler = () => refreshUser();
         window.addEventListener('communityMembershipChanged', handler);
+        return () => window.removeEventListener('communityMembershipChanged', handler);
+    }, [refreshUser]);
+
+    // Listen for a generic userDataChanged event (dispatched after any API action)
+    useEffect(() => {
+        const handler = () => refreshUser();
         window.addEventListener('userDataChanged', handler);
-        return () => {
-            window.removeEventListener('communityMembershipChanged', handler);
-            window.removeEventListener('userDataChanged', handler);
-        };
+        return () => window.removeEventListener('userDataChanged', handler);
     }, [refreshUser]);
 
     return (
@@ -102,8 +85,7 @@ export const UserDataProvider = ({ children }) => {
             joinedCommunities,
             allCommunities,
             isLoading,
-            refreshUser,
-            setJoinedCommunities,
+            refreshUser
         }}>
             {children}
         </UserDataContext.Provider>
