@@ -23,10 +23,18 @@ const getAllCommunities = async (req,res) => {
     });
 }
 
+const getUserCommunity = async (req,res)=>{
+    const role = req.query.role
+    const email = req.query.email
+    if (role === "farmer" || role ==="Farmer" || role === "FARMER"){
+        Farmer.findOne({email : email}).then((farmer)=>res.json({"communities" : farmer.joinedCommunity})).catch((err)=>res.send(err))
+    }
+}
 
 
 
 module.exports = {
     getCommunityByQuery,
-    getAllCommunities
+    getAllCommunities,
+    getUserCommunity
 }

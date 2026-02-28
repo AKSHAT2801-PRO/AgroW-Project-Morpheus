@@ -8,17 +8,21 @@ const likeContent = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$push : {likes : email}}).then(() => {
+    const content = await Content.findById(contentId);
+    content.likes.push(email);
+    content.save().then(async() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-            Farmer.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
+            await Farmer.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
+            await Farmer.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
         else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-            ServiceProvider.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
+            await ServiceProvider.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
+            await ServiceProvider.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
-    }).then(() => {
-        res.status(200).json({message : "Content liked successfully"});
     }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
+        return res.status(500).json({message : "Internal server error"});
     });
 }   
 
@@ -26,18 +30,21 @@ const removeLike = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$pull : {likes : email}}
-    ).then(() => {
+    const content = await Content.findById(contentId);
+    content.likes.pull(email);
+    content.save().then(async() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-            Farmer.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
+            await Farmer.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
+            await Farmer.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
         else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-            ServiceProvider.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
+            await ServiceProvider.findOneAndUpdate({email : email}, {$pull : {likedContent : contentId}})
+            await ServiceProvider.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
-    }).then(() => {
-        res.status(200).json({message : "Like removed successfully"});
     }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
+        return res.status(500).json({message : "Internal server error"});
     });
 }
 
@@ -45,18 +52,21 @@ const dislikeContent = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$push : {dislikes : email}}
-    ).then(() => {
+    const content = await Content.findById(contentId);
+    content.dislikes.push(email);
+    content.save().then(async() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-            Farmer.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
+            await Farmer.findOneAndUpdate({email : email}, {$push : {dislikedContent : contentId}})
+            await Farmer.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
         else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-            ServiceProvider.findOneAndUpdate({email : email}, {$push : {likedContent : contentId}})
-        }   
-    }).then(() => {
-        res.status(200).json({message : "Content disliked successfully"});
+            await ServiceProvider.findOneAndUpdate({email : email}, {$push : {dislikedContent : contentId}})
+            await ServiceProvider.save();
+            return res.status(200).json({message : "Content liked successfully"});
+        }
     }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
+        return res.status(500).json({message : "Internal server error"});
     });
 }
 
@@ -64,18 +74,21 @@ const removeDislike = async (req, res) => {
     const contentId = req.query.contentId;
     const email = req.query.email;
     const role = req.query.role;
-    await Content.findByIdAndUpdate(contentId, {$pull : {dislikes : email}}
-    ).then(() => {
+    const content = await Content.findById(contentId);
+    content.dislikes.pull(email);
+    content.save().then(async() => {
         if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-            Farmer.findOneAndUpdate({email : email}, {$pull : {dislikedContent : contentId}})
+            await Farmer.findOneAndUpdate({email : email}, {$pull : {dislikedContent : contentId}})
+            await Farmer.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
         else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-            ServiceProvider.findOneAndUpdate({email : email}, {$pull : {dislikedContent : contentId}})
+            await ServiceProvider.findOneAndUpdate({email : email}, {$pull : {dislikedContent : contentId}})
+            await ServiceProvider.save();
+            return res.status(200).json({message : "Content liked successfully"});
         }
-    }).then(() => {
-        res.status(200).json({message : "Dislike removed successfully"});
     }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
+        return res.status(500).json({message : "Internal server error"});
     });
 }
 

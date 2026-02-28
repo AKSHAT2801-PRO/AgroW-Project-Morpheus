@@ -1,4 +1,3 @@
-const { response } = require("express");
 
 async function fetchCredibility(data){
     resp = await fetch("https://resectional-ruttily-gaylene.ngrok-free.dev/ans",{
@@ -7,10 +6,13 @@ async function fetchCredibility(data){
         'Content-Type':'application/json' // Inform the server the body is JSON
       },
       body: JSON.stringify(data)// Convert the JavaScript object to a JSON string
-    }).then(response => response.json()).catch(error =>{
-        console.error('Error:', error);
-    });
-    return resp;
+    })
+    if (resp){ 
+      return resp.json() // Parse the response as JSON and return it
+    }
+    else {
+      return null // Return null if the response is not successful
+    }
 
 }
 

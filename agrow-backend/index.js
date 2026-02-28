@@ -32,8 +32,12 @@ app.use("/api/community",communityRouter)
 app.use("/api/content",contentRouter)
 app.use("/api/dashboard",dashboardRouter)
 
+
+
+
 //Defining Port
 const PORT  = process.env.PORT || 8055;
+
 
 // starting the server
 app.listen(PORT,()=>{

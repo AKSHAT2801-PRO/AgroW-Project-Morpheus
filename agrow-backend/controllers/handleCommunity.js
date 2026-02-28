@@ -27,84 +27,102 @@ setCommunity = async (req, res) => {
     });
 }
 
-joinCommunity = async (req, res) => {
-    const communityId = req.query.communityId;
-    const role = req.query.role;
-    const email = req.query.email;
-    await Community.findById(communityId).then((community) => {
-        if (!community) {
-            res.status(404).json({message : "Community not found"});
-            return;
-        }
-        else if (community.members.includes(email)) {
-            res.status(400).json({message : "Already a member of the community"});
-            return;
-        }
-        else {
-            community.members.push(email);
-            community.save()
-        }
-        }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
-    });
-    if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-        await Farmer.findOneAndUpdate({email : email}, {$push : {communityJoined : communityId}}).then(() => {
-            res.status(200).json({message : "Joined community successfully"});
-        }).catch((err) => {
-            res.status(500).json({message : "Internal server error"});
-        });
-    }
-    else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-        await ServiceProvider.findOneAndUpdate({email : email}, {$push : {communityJoined : communityId}}).then(() => {
-            res.status(200).json({message : "Joined community successfully"});
-        }).catch((err) => {
-            res.status(500).json({message : "Internal server error"});
-        });
-    }
-    else {
-        res.status(400).json({message : "Invalid role"});
-    }
-}
+const joinCommunity = async (req, res) => {
+  try {
+    const { communityId, role, email } = req.query;
 
-leaveCommunity = async (req, res) => {
-    const communityId = req.query.communityId;
-    const role = req.query.role;
-    const email = req.query.email;
-    await Community.findById(communityId).then((community) => {
-        if (!community) {
-            res.status(404).json({message : "Community not found"});
-            return;
-        }
-        else if (community.members.includes(email)) {
-            community.members.pull(email);
-            community.save();
-            return;
-        }
-        else {
-           res.status(400).json({message : "Not a member of the community"});
-           return;
-        }
-        }).catch((err) => {
-        res.status(500).json({message : "Internal server error"});
-    });
-    if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-        await Farmer.findOneAndUpdate({email : email}, {$pull : {communityJoined : communityId}}).then(() => {
-            res.status(200).json({message : "Left community successfully"});
-        }).catch((err) => {
-            res.status(500).json({message : "Internal server error"});
-        });
+    if (!communityId || !role || !email)
+      return res.status(400).json({ message: "Missing required fields" });
+
+    // normalize role
+    const normalizedRole = role.toLowerCase();
+
+    // check community exists
+    const community = await Community.findById(communityId);
+    if (!community)
+      return res.status(404).json({ message: "Community not found" });
+
+    // already member?
+    if (community.members.includes(email))
+      return res.status(400).json({ message: "Already a member of the community" });
+
+    // add user to community
+    await Community.findByIdAndUpdate(
+      communityId,
+      { $addToSet: { members: email } },
+      { new: true }
+    );
+
+    // update user side
+    if (normalizedRole === "farmer") {
+      await Farmer.findOneAndUpdate(
+        { email },
+        { $addToSet: { communityJoined: communityId } }
+      );
     }
-    else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-        await ServiceProvider.findOneAndUpdate({email : email}, {$pull : {communityJoined : communityId}}).then(() => {
-            res.status(200).json({message : "Left community successfully"});
-        }).catch((err) => {
-            res.status(500).json({message : "Internal server error"});
-        });
+    else if (normalizedRole === "service provider") {
+      await ServiceProvider.findOneAndUpdate(
+        { email },
+        { $addToSet: { communityJoined: communityId } }
+      );
     }
     else {
-        res.status(400).json({message : "Invalid role"});
+      return res.status(400).json({ message: "Invalid role" });
     }
-}
+
+    return res.status(200).json({ message: "Joined community successfully" });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const leaveCommunity = async (req, res) => {
+  try {
+    const { communityId, role, email } = req.query;
+
+    if (!communityId || !role || !email)
+      return res.status(400).json({ message: "Missing required fields" });
+
+    const normalizedRole = role.toLowerCase();
+
+    const community = await Community.findById(communityId);
+    if (!community)
+      return res.status(404).json({ message: "Community not found" });
+
+    if (!community.members.includes(email))
+      return res.status(400).json({ message: "Not a member of the community" });
+
+    await Community.findByIdAndUpdate(
+      communityId,
+      { $pull: { members: email } },
+      { new: true }
+    );
+
+    if (normalizedRole === "farmer") {
+      await Farmer.findOneAndUpdate(
+        { email },
+        { $pull: { communityJoined: communityId } }
+      );
+    }
+    else if (normalizedRole === "service provider") {
+      await ServiceProvider.findOneAndUpdate(
+        { email },
+        { $pull: { communityJoined: communityId } }
+      );
+    }
+    else {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    return res.status(200).json({ message: "Left community successfully" });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 getMembers = async (req, res) => {
     const communityId = req.query.communityId; 
@@ -137,93 +155,30 @@ getContent = async (req, res) => {
     });
 }
 
-createContent = async (req, res) => {
-    const body = req.body;
+const createContent = async (req, res) => {
     const role = req.body.userRole;
-    const title = body.title;
-    const description = body.description;
-    const category = body.category;
-    const tags = body.tags;
-    const postedBy = body.postedBy;
-    const communityId = body.communityId;
-    const createdOn = body.createdOn;
-    const comments = body.comments;
-    const likes = body.likes;
-    const dislikes = body.dislikes;
-    const media = req.file ? req.file.path : null;
-    const mediaType = req.file ? req.file.mimetype : null;
-
-    // const data = {
-    //     "title" : body.title,
-    //     "description" : body.description
-    // }
-    // const credibility_data = await fetchCredibility(data);
-    const credibility = 50 ;
-    await Content.create({
-        title,
-        description,
-        category,
-        tags,
-        userRole : role,
-        postedBy,
-        communityIds : [communityId],
-        createdOn,
-        comments,
-        likes,
-        dislikes,
-        media,
-        mediaType
-    }).then((content) => {
-        console.log(content._id)
-        console.log(communityId)
-        console.log(role)
-        Community.findByIdAndUpdate(communityId, {$push : {content : content._id}}).then(()=>{
-            if (role === "farmer" || role === "Farmer" || role === "FARMER") {
-                Farmer.findOneAndUpdate({email : body.email}, {$push : {userContent : content._id}})
-                const farmer = Farmer.findOne({email : body.email})
-                const prevCred = farmer.credibilityScore  || 50;
-                if (prevCred === 50) {
-                    Farmer.findOneAndUpdate({email : body.postedBy}, {credibilityScore : credibility}).then(()=>{
-                        res.status(201).json({message : "Content created successfully"});
-                    }).catch((err) => {
-                    });
-                }
-                else{
-                    const newCred = (prevCred + credibility) / 2;
-                    Farmer.findOneAndUpdate({email : body.postedBy}, {credibilityScore : newCred}).then(()=>{
-                        res.status(201).json({message : "Content created successfully"});
-                    }).catch((err) => {
-                    });
-                }
-                
-            }
-            else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
-                ServiceProvider.findOneAndUpdate({email : body.postedBy}, {$push : {userContent : content._id}})
-                const servicProvider = ServiceProvider.findOne({email : body.postedBy})
-                const prevCred = servicProvider.credibilityScore;
-                if (prevCred === 0) {
-                    ServiceProvider.findOneAndUpdate({email : body.postedBy}, {credibilityScore : credibility}).then(()=>{
-                        res.status(201).json({message : "Content created successfully"});
-                    }).catch((err) => {
-                    });
-                }
-                else{
-                    const newCred = (prevCred + credibility) / 2;
-                    ServiceProvider.findOneAndUpdate({email : body.postedBy}, {credibilityScore : newCred}).then(()=>{
-                        res.status(201).json({message : "Content created successfully"});
-                    }).catch((err) => {
-                    });
-                }
-                
-            }
-        }).catch((err) => {
-            res.status(500).json({message : "Internal server error1"});
-        });
-    }).catch((err) => {
-        res.status(500).json({message : "Internal server error2"});
-    });
+    const email = req.body.postedBy;
+    const content = new Content(req.body);
+    content.save();
+    Community.findById(req.body.communityIds[0]).then((community) => {
+        community.content.push(content._id);
+        community.save();
+    })
+    if (role === "farmer" || role === "Farmer" || role === "FARMER") {
+        Farmer.findOne({email : email}).then((farmer) => {
+            farmer.userContent.push(content._id);
+            farmer.save();
+            return res.status(201).json({message : "Content created successfully"});
+        })
+    }
+    else if (role === "service provider" || role === "Service Provider" || role === "SERVICE PROVIDER") {
+        ServiceProvider.findOne({email : email}).then((serviceProvider) => {
+            serviceProvider.userContent.push(content._id);
+            serviceProvider.save();
+            return res.status(201).json({message : "Content created successfully"});
+        })
+    }
 }
-
 
 module.exports = {setCommunity,
     joinCommunity,
@@ -231,5 +186,4 @@ module.exports = {setCommunity,
     getMembers,
     getContent,
     createContent
-
 }
