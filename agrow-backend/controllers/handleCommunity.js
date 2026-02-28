@@ -34,26 +34,19 @@ const joinCommunity = async (req, res) => {
     if (!communityId || !role || !email)
       return res.status(400).json({ message: "Missing required fields" });
 
-    // normalize role
     const normalizedRole = role.toLowerCase();
-
-    // check community exists
     const community = await Community.findById(communityId);
     if (!community)
       return res.status(404).json({ message: "Community not found" });
 
-    // already member?
     if (community.members.includes(email))
       return res.status(400).json({ message: "Already a member of the community" });
 
-    // add user to community
-    await Community.findByIdAndUpdate(
-      communityId,
-      { $addToSet: { members: email } },
-      { new: true }
-    );
-
-    // update user side
+  await Community.findByIdAndUpdate(
+  communityId,
+  { $addToSet: { members: email } },
+  { returnDocument: 'after' }
+);
     if (normalizedRole === "farmer") {
       await Farmer.findOneAndUpdate(
         { email },
