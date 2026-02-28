@@ -1,0 +1,328 @@
+"/api/user/get?email&&role" : { //Done . Tested with postman and working fine.
+    "method" : "GET",
+    "description" : "Get the user detail by email Id",
+    "request" : {
+        "email" : "string",
+        "role" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+        "_id" : "string",
+        "userName" : "string",
+        "firstName" : "string",
+        "lastName" : "string",
+        "email" : "string",
+        "gender" : "string",
+        "credibilityScore" : "number",
+        "state" : "string",
+        "district" : "string",
+        "taluka" : "string",
+        "village" : "string",
+        "cropList" : "[string]", //based on role
+        "serviceList" : "[string]", //based on role
+        "interestedIn" : "[string]",
+        "communityJoined" : "[string]",
+        "userContent" : "[string]",
+        "likedContent" : "[string]",
+        "dislikedContent" : "[string]"
+    }
+},
+"api/user/set" : {  //Done . Tested with postman and working fine.
+    "method" : "POST",
+    "description" : "Set the user details in the database",
+    "request" : {
+        "role" : "string",
+        "userName" : "string",
+        "firstName" : "string",
+        "lastName" : "string",
+        "email" : "string",
+        "gender" : "string",
+        "credibilityScore" : "Number",
+        "state" : "string",
+        "district" : "string",
+        "taluka" : "string",
+        "village" : "string",
+        "cropList" : "[string]",// based on role
+        "serviceList" :"[string]",// based on role
+        "interestedIn" : "[string]",
+        "communityJoined" : "[string]",
+        "userContent" : "[string]",
+        "likedContent" : "[string]",
+        "dislikedContent" : "[string]"
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/community/set?role&&email" : { //Done .  Tested with postman and working fine.
+    "method" : "POST",
+    "description" : "Set the community details in the database",
+    "request-params" : {
+        "role" : "string",
+        "email" : "string"
+        // query params
+    },
+    "request" : {
+        "name" : "string",
+        "description" : "string",
+        "rules" : "string",
+        "members" : "[string]", // user email Ids
+        "content" : "[string]",
+        "state" : "string",
+        "district" : "string",
+        "taluka" : "string",
+        "village" : "string",
+        "searchTags" : "[string]"
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/dashboard/get?query" : {  //Done     tested with postman and working fine.
+    "method" : "GET",
+    "description" : "Get the community details by query string which can be name, state, district, taluka, village or searchTags",
+    "request" : {
+        "query" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+        "_id" : "string",
+        "name" : "string",
+        "description" : "string",
+        "rules" : "string",
+        "members" : "[string]",
+        "content" : "[string]",
+        "state" : "string",
+        "district" : "string",
+        "taluka" : "string",
+        "village" : "string",
+        "searchTags" : "[string]"
+    }
+},
+"api/dashboard/getall" : {  //Done tested with postman and working fine.
+    "method" : "GET",
+    "description" : "Get the details of all the communities in the database",
+    "request" : {
+        // no params
+    },
+    "response" : {
+        "success" : "boolean",
+        "communities" : [
+            {
+                "name" : "string",
+                "description" : "string",
+                "rules" : "string",
+                "members" : "[string]",
+                "content" : "[string]",
+                "state" : "string",
+                "district" : "string",
+                "taluka" : "string",
+                "village" : "string",
+                "searchTags" : "[string]"
+            }
+        ]
+    }
+},
+"api/community/join?email&&role&&communityId" : { //Done . tested with postman and working fine.
+    "method" : "GET",
+    "description" : "Add the user to the community and update the user and community details in the database",
+    "request" : {
+        "email" : "string",
+        "role" : "string",
+        "communityId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/community/leave?email&&role&&communityId" : {  //Done . tested with postman and working fine.
+    "method" : "GET",
+    "description" : "Remove the user from the community and update the user and community details in the database",
+    "request" : {
+        "email" : "string",
+        "communityId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/community/members?communityId" : { //Done . tested with postman and working fine.
+    "method" : "GET",
+    "description" : "Get the list of members in the community",
+    "request" : {
+        "communityId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+        "members" : "[string]"
+    }
+},
+"api/community/content?communityId" : { //Done .
+    "method" : "GET",
+    "description" : "Get the list of content in the community",
+    "request" : {
+        "communityId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+        "content" : "[json]" // takes complete content data inside
+    }
+},
+"api/community/createContent" : {  //Done  tested with postman and working fine.
+    "method" : "POST",
+    "description" : "Create a content in the community and update the community details in the database",
+    "request" : {
+        "title" : "string",
+        "description" : "string",
+        "category" : "string",
+        "tags" : "[string]",
+        "userRole" : "string",
+        "postedBy" : "string",
+        "communityIds" : "[string]", // adding communityid of that particular community
+        "createdOn" : "date",
+        "comments" : "[json]",
+        "likes" : "[string]", // list of email Ids who liked the content
+        "dislikes" : "[string]", // list of email Ids who disliked the content
+        "media" : "string", // list of media URLs
+        "mediaType" : "string" // image, video or document
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/like?email&&role&&contentId" : { //Done . tested with postman and working fine
+    "method" : "GET",
+    "description" : "Like the content and update the content details in the database",
+    "request" : {
+        "email" : "string",
+        "contentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/removeLike?email&&role&&contentId" : { //Done . tested with postman and working fine
+    "method" : "GET",
+    "description" : "Remove like from the content and update the content details in the database",
+    "request" : {
+        "email" : "string",
+        "contentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/dislike?email&role&&contentId" : { //Done . tested with postman and working fine
+    "method" : "GET",
+    "description" : "Dislike the content and update the content details in the database",
+    "request" : {
+        "email" : "string",
+        "contentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/removeDislike?email&role&&contentId" : { //Done . tested with postman and working fine
+    "method" : "GET",
+    "description" : "Dislike the content and update the content details in the database",
+    "request" : {
+        "email" : "string",
+        "contentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/remove?contentId" : {  //Done . tested with postman and working fine
+    "method" : "GET",
+    "description" : "Remove the content from the community and update the community details in the database",
+    "request" : {
+        "contentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/comment" : {  //Done . tested with postman and working fine
+    "method" : "POST",
+    "description" : "Add a comment to the content and update the content details in the database",
+    "request" : {
+        "contentId" : "string",
+        "commentedBy" : "string",
+        "commentText" : "string",
+        "commentOn" : "date",
+        // "commentLikes" : "[string]" // list of email Ids who liked the comment
+
+        
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+}
+"api/content/removecomment?contentId&&commentId" : { //Done . tested with postman and working fine ..
+    "method" : "GET",
+    "description" : "Remove the comment from the content and update the content details in the database",
+    "request" : {
+        "contentId" : "string",
+        "commentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+}
+"api/content/likecomment?email&&commentId" : { //Done . tested with postman and working fine ..
+    "method" : "GET",
+    "description" : "Like the comment and update the content details in the database",
+    "request" : {
+        "email" : "string",
+        "contentId" : "string",
+        "commentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+},
+"api/content/removeLikeComment?email&&commentId" : { //Done . tested with postman and working fine ..
+    "method" : "GET",
+    "description" : "Remove like from the comment and update the content details in the database",
+    "request" : {
+        "email" : "string",
+        "contentId" : "string",
+        "commentId" : "string"
+        // query params
+    },
+    "response" : {
+        "success" : "boolean",
+    }
+        
+}
+
+
+

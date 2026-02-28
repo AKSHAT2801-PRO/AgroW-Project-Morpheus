@@ -1,0 +1,30 @@
+﻿
+> agrow-frontend@0.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 39 modules transformed.
+node.exe : [31mx[39m Build failed in 707ms
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mx[39m Build failed in 707ms 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[31merror during build:
+[31mCould not resolve "../services/api" from 
+"src/pages/OnboardingPage.jsx"[31m
+file: [36mC:/Users/Sarthak/Documents/Hackathon/AgroW-Project-Morpheus/agrow-fr
+ontend/src/pages/OnboardingPage.jsx[31m
+    at getRollupError (file:///C:/Users/Sarthak/Documents/Hackathon/AgroW-Proje
+ct-Morpheus/agrow-frontend/node_modules/rollup/dist/es/shared/parseAst.js:402:4
+1)
+    at error (file:///C:/Users/Sarthak/Documents/Hackathon/AgroW-Project-Morphe
+us/agrow-frontend/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at ModuleLoader.handleInvalidResolvedId (file:///C:/Users/Sarthak/Documents
+/Hackathon/AgroW-Project-Morpheus/agrow-frontend/node_modules/rollup/dist/es/sh
+ared/node-entry.js:21710:24)
+    at file:///C:/Users/Sarthak/Documents/Hackathon/AgroW-Project-Morpheus/agro
+w-frontend/node_modules/rollup/dist/es/shared/node-entry.js:21670:26[39m

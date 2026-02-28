@@ -1,0 +1,17 @@
+{
+    "name": "AgroW",
+    "short_name": "AgroW",
+    "description": "India's farming community platform — connect, learn, and grow together.",
+    "start_url": "/feed",
+    "display": "standalone",
+    "background_color": "#F3F4F6",
+    "theme_color": "#2E7D32",
+    "icons": [
+        {
+            "src": "/leaf.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
